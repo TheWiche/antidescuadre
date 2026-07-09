@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AntiDescuadre — ventas y cobros sin descuadres para tu bar</title>
+  <meta name="description" content="App offline para bares y restaurantes: turnos, mesas, cobros divididos, comprobantes de transferencia y cero descuadres. Gratis, sin cuentas, tus datos en tu teléfono." />
+  <meta name="theme-color" content="#221723" />
+  <link rel="icon" type="image/svg+xml" href="./assets/icono.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Instrument+Sans:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./css/base.css" />
+  <link rel="stylesheet" href="./css/componentes.css" />
+  <link rel="stylesheet" href="./css/animaciones.css" />
+</head>
+<body>
+
+  <!-- ======== Navegación ======== -->
+  <header class="nav">
+    <a class="nav-logo" href="#arriba" aria-label="AntiDescuadre, inicio">
+      <img src="./assets/icono.svg" alt="" width="34" height="34" />
+      <span>AntiDescuadre</span>
+    </a>
+    <nav class="nav-enlaces" aria-label="Secciones">
+      <a href="#funciones">Funciones</a>
+      <a href="#instalar">Instalar</a>
+      <a href="#preguntas">Preguntas</a>
+    </nav>
+    <a class="btn btn-ambar nav-cta" href="./app/">Abrir la app</a>
+  </header>
+
+  <main id="arriba">
+
+    <!-- ======== Hero: la impresora de comandas ======== -->
+    <section class="hero">
+      <div class="hero-texto">
+        <p class="hero-arriba mono">— para bares y restaurantes —</p>
+        <h1>La caja cuadra.<br /><em>Siempre.</em></h1>
+        <p class="hero-baja">
+          Turnos, mesas, cuentas divididas, comprobantes de transferencia y pedidos
+          por entregar — todo en tu teléfono, <strong>sin internet y sin cuentas</strong>.
+          Al final de la noche, los números cierran solos.
+        </p>
+        <div class="hero-botones">
+          <a class="btn btn-ambar btn-grande" href="./app/">Abrir la app ahora</a>
+          <a class="btn btn-borde btn-grande" href="#instalar">Cómo instalarla</a>
+        </div>
+        <p class="hero-nota mono">gratis · offline · tus datos nunca salen de tu dispositivo</p>
+      </div>
+
+      <div class="hero-impresora" aria-hidden="true">
+        <div class="impresora">
+          <div class="impresora-luz"></div>
+          <div class="impresora-ranura"></div>
+        </div>
+        <div class="ticket ticket-hero" id="ticket-hero">
+          <!-- js/impresora.js imprime aquí línea por línea -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ======== El problema ======== -->
+    <section class="franja-problema">
+      <p class="problema-linea">
+        <span class="tachado">“¿Quién no pagó la mesa 4?”</span>
+        <span class="tachado">“¿Y el comprobante de esa transferencia?”</span>
+        <span class="tachado">“Faltan $12 en caja…”</span>
+        <span class="resaltado mono">descuadre: 0,00</span>
+      </p>
+    </section>
+
+    <!-- ======== Funciones ======== -->
+    <section class="funciones" id="funciones">
+      <h2 class="titulo-seccion revelar">Una noche de viernes,<br />bajo control</h2>
+      <p class="sub-seccion revelar">Cada pantalla existe porque algo se descuadraba sin ella.</p>
+
+      <div class="funcion revelar" data-lado="izq">
+        <figure class="telefono"><img src="./assets/capturas/ticket-mesa.png" alt="Cuenta de una mesa en formato ticket de comanda" loading="lazy" /></figure>
+        <div class="funcion-texto">
+          <span class="chip chip-ambar mono">mesas</span>
+          <h3>Cada mesa, su comanda</h3>
+          <p>Abres la cuenta, agregas productos con dos toques y la ve como un ticket
+          real: qué pidieron, a qué hora, qué falta por entregar. Las mesas se llaman
+          como tú quieras: «La de la ventana», «VIP 2».</p>
+        </div>
+      </div>
+
+      <div class="funcion revelar" data-lado="der">
+        <figure class="telefono"><img src="./assets/capturas/por-consumo.png" alt="División de la cuenta por consumo entre Ana y Luis" loading="lazy" /></figure>
+        <div class="funcion-texto">
+          <span class="chip chip-ambar mono">cobros</span>
+          <h3>“Yo solo tomé dos”</h3>
+          <p>Divide la cuenta en partes iguales, con montos a mano, o por consumo real:
+          asignas los productos a cada persona y cada quien paga lo suyo — incluso
+          mitad en efectivo y mitad por transferencia.</p>
+        </div>
+      </div>
+
+      <div class="funcion revelar" data-lado="izq">
+        <figure class="telefono"><img src="./assets/capturas/comprobantes.png" alt="Listado de comprobantes de transferencia pendientes por legalizar" loading="lazy" /></figure>
+        <div class="funcion-texto">
+          <span class="chip chip-cian mono">transferencias</span>
+          <h3>Ningún comprobante se pierde</h3>
+          <p>Toda transferencia exige foto del comprobante y nace «pendiente de
+          legalizar». Una cinta imposible de ignorar te lo recuerda hasta que la
+          verificas en barra. Ahí muere el clásico “yo sí transferí”.</p>
+        </div>
+      </div>
+
+      <div class="funcion revelar" data-lado="der">
+        <figure class="telefono"><img src="./assets/capturas/pendientes.png" alt="Pedidos pendientes por entregar con cronómetro" loading="lazy" /></figure>
+        <div class="funcion-texto">
+          <span class="chip chip-menta mono">entregas</span>
+          <h3>Nada se enfría en la barra</h3>
+          <p>Todo lo pedido queda «por entregar» con su cronómetro. Si algo lleva
+          demasiado tiempo sin salir, se enciende en rojo. Tú decides cuántos
+          minutos son demasiados.</p>
+        </div>
+      </div>
+
+      <div class="funcion revelar" data-lado="izq">
+        <figure class="telefono"><img src="./assets/capturas/vuelto.png" alt="Cálculo de vuelto en vivo al cobrar" loading="lazy" /></figure>
+        <div class="funcion-texto">
+          <span class="chip chip-ambar mono">caja</span>
+          <h3>El vuelto, sin mentalidad</h3>
+          <p>Escribes con cuánto te pagan y el vuelto aparece al instante. Viernes,
+          2 a.m., música a todo volumen: cero matemáticas mentales, cero errores.</p>
+        </div>
+      </div>
+
+      <div class="funcion revelar" data-lado="der">
+        <figure class="telefono"><img src="./assets/capturas/resumen.png" alt="Resumen del turno con totales de efectivo y transferencia" loading="lazy" /></figure>
+        <div class="funcion-texto">
+          <span class="chip chip-menta mono">turno</span>
+          <h3>El turno cierra cuando cuadra</h3>
+          <p>Todo el día vive dentro de un turno. Y no puedes cerrarlo si una mesa
+          debe dinero — la app te dice cuál y cuánto. Cuando cierra, cierra de verdad:
+          efectivo, transferencias y total, separados.</p>
+        </div>
+      </div>
+
+      <div class="lenguaje-color revelar">
+        <p class="mono">aquí el color habla:</p>
+        <div>
+          <span class="chip chip-ambar">■ ámbar = efectivo y acción</span>
+          <span class="chip chip-cian">■ cian = transferencias</span>
+          <span class="chip chip-menta">■ menta = entregado y pagado</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======== Guía de instalación ======== -->
+    <section class="instalar" id="instalar">
+      <h2 class="titulo-seccion revelar">La comanda de instalación</h2>
+      <p class="sub-seccion revelar">
+        AntiDescuadre no está en ninguna tienda ni la necesita: se instala desde el
+        navegador en menos de un minuto. Marca cada paso como si fuera un pedido.
+      </p>
+
+      <div class="guia revelar">
+        <div class="guia-pestanas" role="tablist" aria-label="Elige tu dispositivo">
+          <button role="tab" data-plataforma="android" aria-selected="true">🤖 Android</button>
+          <button role="tab" data-plataforma="iphone" aria-selected="false">🍎 iPhone / iPad</button>
+          <button role="tab" data-plataforma="pc" aria-selected="false">💻 Computadora</button>
+        </div>
+
+        <div class="ticket ticket-guia">
+          <div class="ticket-cabecera">
+            <div class="ticket-titulo">Instalación</div>
+            <div class="ticket-meta mono" id="guia-subtitulo">Android · Chrome</div>
+          </div>
+          <ol class="guia-pasos" id="guia-pasos"><!-- js/guia.js --></ol>
+          <div class="ticket-pie">
+            <div class="guia-progreso"><div class="guia-progreso-barra" id="guia-barra"></div></div>
+            <p class="ticket-meta mono" id="guia-estado">0 de 0 pasos</p>
+          </div>
+          <div class="sello" id="guia-sello" hidden>instalación<br />saldada</div>
+        </div>
+
+        <p class="guia-nota">
+          ¿Por qué no está en Play Store? Porque no hace falta: es una
+          <strong> app web instalable (PWA)</strong>. Ocupa casi nada, se abre a pantalla
+          completa como cualquier app, funciona sin internet y tus datos se guardan
+          únicamente en tu dispositivo.
+        </p>
+      </div>
+    </section>
+
+    <!-- ======== Preguntas ======== -->
+    <section class="preguntas" id="preguntas">
+      <h2 class="titulo-seccion revelar">Lo que siempre preguntan</h2>
+      <div class="acordeon revelar">
+        <details>
+          <summary>¿Necesito internet para usarla?</summary>
+          <p>Solo la primera vez, para abrirla e instalarla. Después funciona 100%
+          sin conexión: ventas, cobros, fotos de comprobantes, todo.</p>
+        </details>
+        <details>
+          <summary>¿Dónde se guardan mis datos?</summary>
+          <p>En tu propio dispositivo. No hay cuentas, no hay nube, nadie más los ve.
+          Por lo mismo: si borras la app o los datos del navegador, se pierden — es tuya de verdad.</p>
+        </details>
+        <details>
+          <summary>Tengo dos locales, ¿configuro todo dos veces?</summary>
+          <p>No. En Ajustes exportas tu configuración (catálogo, precios, variantes,
+          mesas) como archivo y la importas en el otro dispositivo. Las ventas y
+          turnos de cada local se quedan en su propio equipo.</p>
+        </details>
+        <details>
+          <summary>¿Cuánto cuesta?</summary>
+          <p>Nada. Es un proyecto abierto: el código está publicado en GitHub y la
+          app se sirve desde esta misma página.</p>
+        </details>
+        <details>
+          <summary>¿Sirve para mi menú con variantes raras?</summary>
+          <p>El catálogo lo armas tú desde cero: categorías dentro de categorías, y
+          productos con opciones anidadas (una michelada con base cerveza o soda, y
+          dentro de cada base sus marcas, cada una con su precio extra si aplica).</p>
+        </details>
+      </div>
+    </section>
+
+    <!-- ======== Cierre ======== -->
+    <section class="cierre">
+      <div class="ticket ticket-cierre revelar">
+        <div class="ticket-titulo">¿Lista la barra?</div>
+        <p class="ticket-meta">tu próximo turno puede cuadrar solo</p>
+        <a class="btn btn-tinta btn-grande" href="./app/">Abrir AntiDescuadre</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="pie">
+    <img src="./assets/icono.svg" alt="" width="26" height="26" />
+    <p>AntiDescuadre — hecho para la gente que atiende la barra.</p>
+    <a href="https://github.com/TheWiche/antidescuadre" rel="noopener">Código en GitHub ↗</a>
+  </footer>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>

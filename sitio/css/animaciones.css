@@ -1,0 +1,47 @@
+/* ============================================================
+   Animaciones: keyframes + estados de revelado por scroll.
+   Cada animación confirma algo o guía la mirada; nada decorativo
+   porque sí. `prefers-reduced-motion` las apaga (ver base.css).
+   ============================================================ */
+
+@keyframes parpadeo {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+/* Una línea nueva "sale de la impresora": crece desde arriba */
+@keyframes imprimir-linea {
+  from { opacity: 0; transform: translateY(-10px) scaleY(0.5); }
+  to { opacity: 1; transform: translateY(0) scaleY(1); }
+}
+
+/* El sello de goma cae sobre el papel */
+@keyframes sellar {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(-9deg) scale(2.2); }
+  70% { opacity: 1; transform: translate(-50%, -50%) rotate(-9deg) scale(0.94); }
+  100% { opacity: 1; transform: translate(-50%, -50%) rotate(-9deg) scale(1); }
+}
+
+/* El ticket del hero cuelga y se mece apenas al terminar de imprimir */
+@keyframes mecerse {
+  0%, 100% { transform: rotate(-1.6deg); }
+  50% { transform: rotate(-0.4deg); }
+}
+.ticket-hero.impreso { animation: mecerse 5s ease-in-out infinite; }
+
+/* ---------- Revelado por scroll ---------- */
+.revelar {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.revelar.visto { opacity: 1; transform: translateY(0); }
+
+/* Las funciones entran desde su lado */
+.funcion.revelar[data-lado="izq"] { transform: translateX(-36px); }
+.funcion.revelar[data-lado="der"] { transform: translateX(36px); }
+.funcion.revelar.visto { transform: translateX(0); }
+
+@media (prefers-reduced-motion: reduce) {
+  .revelar { opacity: 1; transform: none; }
+}
