@@ -1,6 +1,19 @@
-node_modules/
-dist/
-dev-dist/
+# Artefactos de build y temporales
 *.log
 *.tmp.*
 .DS_Store
+
+# Flutter/Dart (lo esencial; app/.gitignore cubre el resto)
+app/build/
+app/.dart_tool/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+
+# Firma: NUNCA subir el keystore ni las claves
+app/android/key.properties
+app/android/**/*.keystore
+app/**/release.keystore
+*.keystore
+
+# Ícono intermedio (se regenera desde assets/icono.svg)
+app/assets/icono-1024.png

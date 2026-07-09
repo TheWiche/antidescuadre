@@ -1,0 +1,91 @@
+name: antidescuadre
+description: "Ventas y cobros sin descuadres para bares y restaurantes. Offline, de un solo usuario."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # Estado
+  flutter_riverpod: ^3.1.0
+
+  # Base de datos local reactiva (SQLite)
+  drift: ^2.28.2
+  drift_flutter: ^0.3.0
+  path_provider: ^2.1.5
+  path: ^1.9.1
+
+  # Cámara de comprobantes (captura propia con rotar/repetir)
+  camera: ^0.11.3
+  image: ^4.5.4
+  # Guardar la foto también en la galería (carpeta de la app — sección 3.6)
+  gal: ^2.3.2
+
+  # Notificación persistente de comprobantes pendientes (regla 9)
+  flutter_local_notifications: ^19.4.2
+
+  # Compartir factura y exportar/importar configuración
+  share_plus: ^12.0.1
+  file_picker: ^10.3.3
+
+  # Íconos
+  intl: ^0.20.2
+  lucide_icons_flutter: ^3.1.14+2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  drift_dev: ^2.28.3
+  build_runner: ^2.7.1
+  flutter_launcher_icons: ^0.14.4
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/fuentes/
+
+  fonts:
+    - family: Bricolage
+      fonts:
+        - asset: assets/fuentes/Bricolage-400.ttf
+          weight: 400
+        - asset: assets/fuentes/Bricolage-600.ttf
+          weight: 600
+        - asset: assets/fuentes/Bricolage-700.ttf
+          weight: 700
+        - asset: assets/fuentes/Bricolage-800.ttf
+          weight: 800
+    - family: Instrument
+      fonts:
+        - asset: assets/fuentes/Instrument-400.ttf
+          weight: 400
+        - asset: assets/fuentes/Instrument-500.ttf
+          weight: 500
+        - asset: assets/fuentes/Instrument-600.ttf
+          weight: 600
+        - asset: assets/fuentes/Instrument-700.ttf
+          weight: 700
+    - family: SplineMono
+      fonts:
+        - asset: assets/fuentes/SplineMono-400.ttf
+          weight: 400
+        - asset: assets/fuentes/SplineMono-500.ttf
+          weight: 500
+        - asset: assets/fuentes/SplineMono-700.ttf
+          weight: 700
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icono-1024.png"
+  adaptive_icon_background: "#221723"
+  adaptive_icon_foreground: "assets/icono-1024.png"

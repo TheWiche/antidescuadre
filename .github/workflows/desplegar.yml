@@ -1,4 +1,4 @@
-name: Desplegar a GitHub Pages
+name: Desplegar sitio y APK
 
 on:
   push:
@@ -6,50 +6,26 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write   # publicar el APK en Releases
   pages: write
   id-token: write
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
-  construir:
+  # 1) La página de presentación/instalación → GitHub Pages (solo sitio/)
+  sitio:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: antidescuadre/package-lock.json
-
-      - name: Instalar dependencias de la app
-        run: npm ci
-        working-directory: antidescuadre
-
-      - name: Construir la app (PWA) bajo /app/
-        run: npm run build
-        working-directory: antidescuadre
-        env:
-          BASE_URL: /antidescuadre/app/
-
-      - name: Ensamblar sitio + app
-        run: |
-          mkdir -p _site/app
-          cp -r sitio/. _site/
-          cp -r antidescuadre/dist/. _site/app/
-
       - uses: actions/configure-pages@v5
-
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: _site
-
-  desplegar:
-    needs: construir
+          path: sitio
+  desplegar-sitio:
+    needs: sitio
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -57,3 +33,61 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # 2) El APK nativo firmado → GitHub Releases (tag "latest", URL estable)
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Instalar dependencias
+        run: flutter pub get
+        working-directory: app
+
+      - name: Generar código (Drift)
+        run: dart run build_runner build --delete-conflicting-outputs
+        working-directory: app
+
+      - name: Pruebas
+        run: flutter test
+        working-directory: app
+
+      - name: Restaurar keystore de firma
+        working-directory: app/android
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_B64 }}" | base64 -d > release.keystore
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+
+      - name: Construir APK release firmado
+        working-directory: app
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/app/android/release.keystore
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          flutter build apk --release
+          cp build/app/outputs/flutter-apk/app-release.apk antidescuadre.apk
+
+      - name: Publicar en Releases (tag latest)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view latest >/dev/null 2>&1; then
+            gh release upload latest app/antidescuadre.apk --clobber
+          else
+            gh release create latest app/antidescuadre.apk \
+              --title "AntiDescuadre — última versión" \
+              --notes "APK de instalación directa para Android. Descárgalo, ábrelo y permite instalar apps de orígenes desconocidos."
+          fi
