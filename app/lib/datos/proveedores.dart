@@ -31,6 +31,11 @@ final cuentaDeMesaProv = StreamProvider.family<Cuenta?, int>(
   (ref, mesaId) => ref.watch(baseDatos).verCuentaActivaDeMesa(mesaId),
 );
 
+final cuentasCerradasDeMesaProv =
+    StreamProvider.family<List<Cuenta>, ({int mesaId, int turnoId})>(
+  (ref, args) => ref.watch(baseDatos).verCuentasCerradasDeMesa(args.mesaId, args.turnoId),
+);
+
 final itemsDeCuentaProv = StreamProvider.family<List<Item>, int>(
   (ref, cuentaId) => ref.watch(baseDatos).verItemsDeCuenta(cuentaId),
 );

@@ -1252,21 +1252,6 @@ class $CuentasTable extends Cuentas with TableInfo<$CuentasTable, Cuenta> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _esDirectaMeta = const VerificationMeta(
-    'esDirecta',
-  );
-  @override
-  late final GeneratedColumn<bool> esDirecta = GeneratedColumn<bool>(
-    'es_directa',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("es_directa" IN (0, 1))',
-    ),
-    defaultValue: const Constant(false),
-  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1275,7 +1260,6 @@ class $CuentasTable extends Cuentas with TableInfo<$CuentasTable, Cuenta> {
     estado,
     abiertaEn,
     cerradaEn,
-    esDirecta,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1326,12 +1310,6 @@ class $CuentasTable extends Cuentas with TableInfo<$CuentasTable, Cuenta> {
         cerradaEn.isAcceptableOrUnknown(data['cerrada_en']!, _cerradaEnMeta),
       );
     }
-    if (data.containsKey('es_directa')) {
-      context.handle(
-        _esDirectaMeta,
-        esDirecta.isAcceptableOrUnknown(data['es_directa']!, _esDirectaMeta),
-      );
-    }
     return context;
   }
 
@@ -1365,10 +1343,6 @@ class $CuentasTable extends Cuentas with TableInfo<$CuentasTable, Cuenta> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}cerrada_en'],
       ),
-      esDirecta: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}es_directa'],
-      )!,
     );
   }
 
@@ -1385,7 +1359,6 @@ class Cuenta extends DataClass implements Insertable<Cuenta> {
   final String estado;
   final DateTime abiertaEn;
   final DateTime? cerradaEn;
-  final bool esDirecta;
   const Cuenta({
     required this.id,
     this.mesaId,
@@ -1393,7 +1366,6 @@ class Cuenta extends DataClass implements Insertable<Cuenta> {
     required this.estado,
     required this.abiertaEn,
     this.cerradaEn,
-    required this.esDirecta,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1408,7 +1380,6 @@ class Cuenta extends DataClass implements Insertable<Cuenta> {
     if (!nullToAbsent || cerradaEn != null) {
       map['cerrada_en'] = Variable<DateTime>(cerradaEn);
     }
-    map['es_directa'] = Variable<bool>(esDirecta);
     return map;
   }
 
@@ -1424,7 +1395,6 @@ class Cuenta extends DataClass implements Insertable<Cuenta> {
       cerradaEn: cerradaEn == null && nullToAbsent
           ? const Value.absent()
           : Value(cerradaEn),
-      esDirecta: Value(esDirecta),
     );
   }
 
@@ -1440,7 +1410,6 @@ class Cuenta extends DataClass implements Insertable<Cuenta> {
       estado: serializer.fromJson<String>(json['estado']),
       abiertaEn: serializer.fromJson<DateTime>(json['abiertaEn']),
       cerradaEn: serializer.fromJson<DateTime?>(json['cerradaEn']),
-      esDirecta: serializer.fromJson<bool>(json['esDirecta']),
     );
   }
   @override
@@ -1453,7 +1422,6 @@ class Cuenta extends DataClass implements Insertable<Cuenta> {
       'estado': serializer.toJson<String>(estado),
       'abiertaEn': serializer.toJson<DateTime>(abiertaEn),
       'cerradaEn': serializer.toJson<DateTime?>(cerradaEn),
-      'esDirecta': serializer.toJson<bool>(esDirecta),
     };
   }
 
@@ -1464,7 +1432,6 @@ class Cuenta extends DataClass implements Insertable<Cuenta> {
     String? estado,
     DateTime? abiertaEn,
     Value<DateTime?> cerradaEn = const Value.absent(),
-    bool? esDirecta,
   }) => Cuenta(
     id: id ?? this.id,
     mesaId: mesaId.present ? mesaId.value : this.mesaId,
@@ -1472,7 +1439,6 @@ class Cuenta extends DataClass implements Insertable<Cuenta> {
     estado: estado ?? this.estado,
     abiertaEn: abiertaEn ?? this.abiertaEn,
     cerradaEn: cerradaEn.present ? cerradaEn.value : this.cerradaEn,
-    esDirecta: esDirecta ?? this.esDirecta,
   );
   Cuenta copyWithCompanion(CuentasCompanion data) {
     return Cuenta(
@@ -1482,7 +1448,6 @@ class Cuenta extends DataClass implements Insertable<Cuenta> {
       estado: data.estado.present ? data.estado.value : this.estado,
       abiertaEn: data.abiertaEn.present ? data.abiertaEn.value : this.abiertaEn,
       cerradaEn: data.cerradaEn.present ? data.cerradaEn.value : this.cerradaEn,
-      esDirecta: data.esDirecta.present ? data.esDirecta.value : this.esDirecta,
     );
   }
 
@@ -1494,15 +1459,14 @@ class Cuenta extends DataClass implements Insertable<Cuenta> {
           ..write('turnoId: $turnoId, ')
           ..write('estado: $estado, ')
           ..write('abiertaEn: $abiertaEn, ')
-          ..write('cerradaEn: $cerradaEn, ')
-          ..write('esDirecta: $esDirecta')
+          ..write('cerradaEn: $cerradaEn')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode =>
-      Object.hash(id, mesaId, turnoId, estado, abiertaEn, cerradaEn, esDirecta);
+      Object.hash(id, mesaId, turnoId, estado, abiertaEn, cerradaEn);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1512,8 +1476,7 @@ class Cuenta extends DataClass implements Insertable<Cuenta> {
           other.turnoId == this.turnoId &&
           other.estado == this.estado &&
           other.abiertaEn == this.abiertaEn &&
-          other.cerradaEn == this.cerradaEn &&
-          other.esDirecta == this.esDirecta);
+          other.cerradaEn == this.cerradaEn);
 }
 
 class CuentasCompanion extends UpdateCompanion<Cuenta> {
@@ -1523,7 +1486,6 @@ class CuentasCompanion extends UpdateCompanion<Cuenta> {
   final Value<String> estado;
   final Value<DateTime> abiertaEn;
   final Value<DateTime?> cerradaEn;
-  final Value<bool> esDirecta;
   const CuentasCompanion({
     this.id = const Value.absent(),
     this.mesaId = const Value.absent(),
@@ -1531,7 +1493,6 @@ class CuentasCompanion extends UpdateCompanion<Cuenta> {
     this.estado = const Value.absent(),
     this.abiertaEn = const Value.absent(),
     this.cerradaEn = const Value.absent(),
-    this.esDirecta = const Value.absent(),
   });
   CuentasCompanion.insert({
     this.id = const Value.absent(),
@@ -1540,7 +1501,6 @@ class CuentasCompanion extends UpdateCompanion<Cuenta> {
     this.estado = const Value.absent(),
     required DateTime abiertaEn,
     this.cerradaEn = const Value.absent(),
-    this.esDirecta = const Value.absent(),
   }) : turnoId = Value(turnoId),
        abiertaEn = Value(abiertaEn);
   static Insertable<Cuenta> custom({
@@ -1550,7 +1510,6 @@ class CuentasCompanion extends UpdateCompanion<Cuenta> {
     Expression<String>? estado,
     Expression<DateTime>? abiertaEn,
     Expression<DateTime>? cerradaEn,
-    Expression<bool>? esDirecta,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1559,7 +1518,6 @@ class CuentasCompanion extends UpdateCompanion<Cuenta> {
       if (estado != null) 'estado': estado,
       if (abiertaEn != null) 'abierta_en': abiertaEn,
       if (cerradaEn != null) 'cerrada_en': cerradaEn,
-      if (esDirecta != null) 'es_directa': esDirecta,
     });
   }
 
@@ -1570,7 +1528,6 @@ class CuentasCompanion extends UpdateCompanion<Cuenta> {
     Value<String>? estado,
     Value<DateTime>? abiertaEn,
     Value<DateTime?>? cerradaEn,
-    Value<bool>? esDirecta,
   }) {
     return CuentasCompanion(
       id: id ?? this.id,
@@ -1579,7 +1536,6 @@ class CuentasCompanion extends UpdateCompanion<Cuenta> {
       estado: estado ?? this.estado,
       abiertaEn: abiertaEn ?? this.abiertaEn,
       cerradaEn: cerradaEn ?? this.cerradaEn,
-      esDirecta: esDirecta ?? this.esDirecta,
     );
   }
 
@@ -1604,9 +1560,6 @@ class CuentasCompanion extends UpdateCompanion<Cuenta> {
     if (cerradaEn.present) {
       map['cerrada_en'] = Variable<DateTime>(cerradaEn.value);
     }
-    if (esDirecta.present) {
-      map['es_directa'] = Variable<bool>(esDirecta.value);
-    }
     return map;
   }
 
@@ -1618,8 +1571,7 @@ class CuentasCompanion extends UpdateCompanion<Cuenta> {
           ..write('turnoId: $turnoId, ')
           ..write('estado: $estado, ')
           ..write('abiertaEn: $abiertaEn, ')
-          ..write('cerradaEn: $cerradaEn, ')
-          ..write('esDirecta: $esDirecta')
+          ..write('cerradaEn: $cerradaEn')
           ..write(')'))
         .toString();
   }
@@ -3625,8 +3577,82 @@ class $AjustesTable extends Ajustes with TableInfo<$AjustesTable, Ajuste> {
     requiredDuringInsert: false,
     defaultValue: const Constant(10),
   );
+  static const VerificationMeta _simboloMonedaMeta = const VerificationMeta(
+    'simboloMoneda',
+  );
   @override
-  List<GeneratedColumn> get $columns => [id, nombreNegocio, alertaMinutos];
+  late final GeneratedColumn<String> simboloMoneda = GeneratedColumn<String>(
+    'simbolo_moneda',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('\$'),
+  );
+  static const VerificationMeta _formato24hMeta = const VerificationMeta(
+    'formato24h',
+  );
+  @override
+  late final GeneratedColumn<bool> formato24h = GeneratedColumn<bool>(
+    'formato24h',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("formato24h" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _recordatorioBackupDiasMeta =
+      const VerificationMeta('recordatorioBackupDias');
+  @override
+  late final GeneratedColumn<int> recordatorioBackupDias = GeneratedColumn<int>(
+    'recordatorio_backup_dias',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _ultimaExportacionMeta = const VerificationMeta(
+    'ultimaExportacion',
+  );
+  @override
+  late final GeneratedColumn<DateTime> ultimaExportacion =
+      GeneratedColumn<DateTime>(
+        'ultima_exportacion',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _vibracionActivaMeta = const VerificationMeta(
+    'vibracionActiva',
+  );
+  @override
+  late final GeneratedColumn<bool> vibracionActiva = GeneratedColumn<bool>(
+    'vibracion_activa',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("vibracion_activa" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    nombreNegocio,
+    alertaMinutos,
+    simboloMoneda,
+    formato24h,
+    recordatorioBackupDias,
+    ultimaExportacion,
+    vibracionActiva,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -3660,6 +3686,48 @@ class $AjustesTable extends Ajustes with TableInfo<$AjustesTable, Ajuste> {
         ),
       );
     }
+    if (data.containsKey('simbolo_moneda')) {
+      context.handle(
+        _simboloMonedaMeta,
+        simboloMoneda.isAcceptableOrUnknown(
+          data['simbolo_moneda']!,
+          _simboloMonedaMeta,
+        ),
+      );
+    }
+    if (data.containsKey('formato24h')) {
+      context.handle(
+        _formato24hMeta,
+        formato24h.isAcceptableOrUnknown(data['formato24h']!, _formato24hMeta),
+      );
+    }
+    if (data.containsKey('recordatorio_backup_dias')) {
+      context.handle(
+        _recordatorioBackupDiasMeta,
+        recordatorioBackupDias.isAcceptableOrUnknown(
+          data['recordatorio_backup_dias']!,
+          _recordatorioBackupDiasMeta,
+        ),
+      );
+    }
+    if (data.containsKey('ultima_exportacion')) {
+      context.handle(
+        _ultimaExportacionMeta,
+        ultimaExportacion.isAcceptableOrUnknown(
+          data['ultima_exportacion']!,
+          _ultimaExportacionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('vibracion_activa')) {
+      context.handle(
+        _vibracionActivaMeta,
+        vibracionActiva.isAcceptableOrUnknown(
+          data['vibracion_activa']!,
+          _vibracionActivaMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -3681,6 +3749,26 @@ class $AjustesTable extends Ajustes with TableInfo<$AjustesTable, Ajuste> {
         DriftSqlType.int,
         data['${effectivePrefix}alerta_minutos'],
       )!,
+      simboloMoneda: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}simbolo_moneda'],
+      )!,
+      formato24h: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}formato24h'],
+      )!,
+      recordatorioBackupDias: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}recordatorio_backup_dias'],
+      )!,
+      ultimaExportacion: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}ultima_exportacion'],
+      ),
+      vibracionActiva: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}vibracion_activa'],
+      )!,
     );
   }
 
@@ -3694,10 +3782,20 @@ class Ajuste extends DataClass implements Insertable<Ajuste> {
   final int id;
   final String nombreNegocio;
   final int alertaMinutos;
+  final String simboloMoneda;
+  final bool formato24h;
+  final int recordatorioBackupDias;
+  final DateTime? ultimaExportacion;
+  final bool vibracionActiva;
   const Ajuste({
     required this.id,
     required this.nombreNegocio,
     required this.alertaMinutos,
+    required this.simboloMoneda,
+    required this.formato24h,
+    required this.recordatorioBackupDias,
+    this.ultimaExportacion,
+    required this.vibracionActiva,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3705,6 +3803,13 @@ class Ajuste extends DataClass implements Insertable<Ajuste> {
     map['id'] = Variable<int>(id);
     map['nombre_negocio'] = Variable<String>(nombreNegocio);
     map['alerta_minutos'] = Variable<int>(alertaMinutos);
+    map['simbolo_moneda'] = Variable<String>(simboloMoneda);
+    map['formato24h'] = Variable<bool>(formato24h);
+    map['recordatorio_backup_dias'] = Variable<int>(recordatorioBackupDias);
+    if (!nullToAbsent || ultimaExportacion != null) {
+      map['ultima_exportacion'] = Variable<DateTime>(ultimaExportacion);
+    }
+    map['vibracion_activa'] = Variable<bool>(vibracionActiva);
     return map;
   }
 
@@ -3713,6 +3818,13 @@ class Ajuste extends DataClass implements Insertable<Ajuste> {
       id: Value(id),
       nombreNegocio: Value(nombreNegocio),
       alertaMinutos: Value(alertaMinutos),
+      simboloMoneda: Value(simboloMoneda),
+      formato24h: Value(formato24h),
+      recordatorioBackupDias: Value(recordatorioBackupDias),
+      ultimaExportacion: ultimaExportacion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ultimaExportacion),
+      vibracionActiva: Value(vibracionActiva),
     );
   }
 
@@ -3725,6 +3837,15 @@ class Ajuste extends DataClass implements Insertable<Ajuste> {
       id: serializer.fromJson<int>(json['id']),
       nombreNegocio: serializer.fromJson<String>(json['nombreNegocio']),
       alertaMinutos: serializer.fromJson<int>(json['alertaMinutos']),
+      simboloMoneda: serializer.fromJson<String>(json['simboloMoneda']),
+      formato24h: serializer.fromJson<bool>(json['formato24h']),
+      recordatorioBackupDias: serializer.fromJson<int>(
+        json['recordatorioBackupDias'],
+      ),
+      ultimaExportacion: serializer.fromJson<DateTime?>(
+        json['ultimaExportacion'],
+      ),
+      vibracionActiva: serializer.fromJson<bool>(json['vibracionActiva']),
     );
   }
   @override
@@ -3734,15 +3855,36 @@ class Ajuste extends DataClass implements Insertable<Ajuste> {
       'id': serializer.toJson<int>(id),
       'nombreNegocio': serializer.toJson<String>(nombreNegocio),
       'alertaMinutos': serializer.toJson<int>(alertaMinutos),
+      'simboloMoneda': serializer.toJson<String>(simboloMoneda),
+      'formato24h': serializer.toJson<bool>(formato24h),
+      'recordatorioBackupDias': serializer.toJson<int>(recordatorioBackupDias),
+      'ultimaExportacion': serializer.toJson<DateTime?>(ultimaExportacion),
+      'vibracionActiva': serializer.toJson<bool>(vibracionActiva),
     };
   }
 
-  Ajuste copyWith({int? id, String? nombreNegocio, int? alertaMinutos}) =>
-      Ajuste(
-        id: id ?? this.id,
-        nombreNegocio: nombreNegocio ?? this.nombreNegocio,
-        alertaMinutos: alertaMinutos ?? this.alertaMinutos,
-      );
+  Ajuste copyWith({
+    int? id,
+    String? nombreNegocio,
+    int? alertaMinutos,
+    String? simboloMoneda,
+    bool? formato24h,
+    int? recordatorioBackupDias,
+    Value<DateTime?> ultimaExportacion = const Value.absent(),
+    bool? vibracionActiva,
+  }) => Ajuste(
+    id: id ?? this.id,
+    nombreNegocio: nombreNegocio ?? this.nombreNegocio,
+    alertaMinutos: alertaMinutos ?? this.alertaMinutos,
+    simboloMoneda: simboloMoneda ?? this.simboloMoneda,
+    formato24h: formato24h ?? this.formato24h,
+    recordatorioBackupDias:
+        recordatorioBackupDias ?? this.recordatorioBackupDias,
+    ultimaExportacion: ultimaExportacion.present
+        ? ultimaExportacion.value
+        : this.ultimaExportacion,
+    vibracionActiva: vibracionActiva ?? this.vibracionActiva,
+  );
   Ajuste copyWithCompanion(AjustesCompanion data) {
     return Ajuste(
       id: data.id.present ? data.id.value : this.id,
@@ -3752,6 +3894,21 @@ class Ajuste extends DataClass implements Insertable<Ajuste> {
       alertaMinutos: data.alertaMinutos.present
           ? data.alertaMinutos.value
           : this.alertaMinutos,
+      simboloMoneda: data.simboloMoneda.present
+          ? data.simboloMoneda.value
+          : this.simboloMoneda,
+      formato24h: data.formato24h.present
+          ? data.formato24h.value
+          : this.formato24h,
+      recordatorioBackupDias: data.recordatorioBackupDias.present
+          ? data.recordatorioBackupDias.value
+          : this.recordatorioBackupDias,
+      ultimaExportacion: data.ultimaExportacion.present
+          ? data.ultimaExportacion.value
+          : this.ultimaExportacion,
+      vibracionActiva: data.vibracionActiva.present
+          ? data.vibracionActiva.value
+          : this.vibracionActiva,
     );
   }
 
@@ -3760,45 +3917,90 @@ class Ajuste extends DataClass implements Insertable<Ajuste> {
     return (StringBuffer('Ajuste(')
           ..write('id: $id, ')
           ..write('nombreNegocio: $nombreNegocio, ')
-          ..write('alertaMinutos: $alertaMinutos')
+          ..write('alertaMinutos: $alertaMinutos, ')
+          ..write('simboloMoneda: $simboloMoneda, ')
+          ..write('formato24h: $formato24h, ')
+          ..write('recordatorioBackupDias: $recordatorioBackupDias, ')
+          ..write('ultimaExportacion: $ultimaExportacion, ')
+          ..write('vibracionActiva: $vibracionActiva')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, nombreNegocio, alertaMinutos);
+  int get hashCode => Object.hash(
+    id,
+    nombreNegocio,
+    alertaMinutos,
+    simboloMoneda,
+    formato24h,
+    recordatorioBackupDias,
+    ultimaExportacion,
+    vibracionActiva,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Ajuste &&
           other.id == this.id &&
           other.nombreNegocio == this.nombreNegocio &&
-          other.alertaMinutos == this.alertaMinutos);
+          other.alertaMinutos == this.alertaMinutos &&
+          other.simboloMoneda == this.simboloMoneda &&
+          other.formato24h == this.formato24h &&
+          other.recordatorioBackupDias == this.recordatorioBackupDias &&
+          other.ultimaExportacion == this.ultimaExportacion &&
+          other.vibracionActiva == this.vibracionActiva);
 }
 
 class AjustesCompanion extends UpdateCompanion<Ajuste> {
   final Value<int> id;
   final Value<String> nombreNegocio;
   final Value<int> alertaMinutos;
+  final Value<String> simboloMoneda;
+  final Value<bool> formato24h;
+  final Value<int> recordatorioBackupDias;
+  final Value<DateTime?> ultimaExportacion;
+  final Value<bool> vibracionActiva;
   const AjustesCompanion({
     this.id = const Value.absent(),
     this.nombreNegocio = const Value.absent(),
     this.alertaMinutos = const Value.absent(),
+    this.simboloMoneda = const Value.absent(),
+    this.formato24h = const Value.absent(),
+    this.recordatorioBackupDias = const Value.absent(),
+    this.ultimaExportacion = const Value.absent(),
+    this.vibracionActiva = const Value.absent(),
   });
   AjustesCompanion.insert({
     this.id = const Value.absent(),
     this.nombreNegocio = const Value.absent(),
     this.alertaMinutos = const Value.absent(),
+    this.simboloMoneda = const Value.absent(),
+    this.formato24h = const Value.absent(),
+    this.recordatorioBackupDias = const Value.absent(),
+    this.ultimaExportacion = const Value.absent(),
+    this.vibracionActiva = const Value.absent(),
   });
   static Insertable<Ajuste> custom({
     Expression<int>? id,
     Expression<String>? nombreNegocio,
     Expression<int>? alertaMinutos,
+    Expression<String>? simboloMoneda,
+    Expression<bool>? formato24h,
+    Expression<int>? recordatorioBackupDias,
+    Expression<DateTime>? ultimaExportacion,
+    Expression<bool>? vibracionActiva,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (nombreNegocio != null) 'nombre_negocio': nombreNegocio,
       if (alertaMinutos != null) 'alerta_minutos': alertaMinutos,
+      if (simboloMoneda != null) 'simbolo_moneda': simboloMoneda,
+      if (formato24h != null) 'formato24h': formato24h,
+      if (recordatorioBackupDias != null)
+        'recordatorio_backup_dias': recordatorioBackupDias,
+      if (ultimaExportacion != null) 'ultima_exportacion': ultimaExportacion,
+      if (vibracionActiva != null) 'vibracion_activa': vibracionActiva,
     });
   }
 
@@ -3806,11 +4008,22 @@ class AjustesCompanion extends UpdateCompanion<Ajuste> {
     Value<int>? id,
     Value<String>? nombreNegocio,
     Value<int>? alertaMinutos,
+    Value<String>? simboloMoneda,
+    Value<bool>? formato24h,
+    Value<int>? recordatorioBackupDias,
+    Value<DateTime?>? ultimaExportacion,
+    Value<bool>? vibracionActiva,
   }) {
     return AjustesCompanion(
       id: id ?? this.id,
       nombreNegocio: nombreNegocio ?? this.nombreNegocio,
       alertaMinutos: alertaMinutos ?? this.alertaMinutos,
+      simboloMoneda: simboloMoneda ?? this.simboloMoneda,
+      formato24h: formato24h ?? this.formato24h,
+      recordatorioBackupDias:
+          recordatorioBackupDias ?? this.recordatorioBackupDias,
+      ultimaExportacion: ultimaExportacion ?? this.ultimaExportacion,
+      vibracionActiva: vibracionActiva ?? this.vibracionActiva,
     );
   }
 
@@ -3826,6 +4039,23 @@ class AjustesCompanion extends UpdateCompanion<Ajuste> {
     if (alertaMinutos.present) {
       map['alerta_minutos'] = Variable<int>(alertaMinutos.value);
     }
+    if (simboloMoneda.present) {
+      map['simbolo_moneda'] = Variable<String>(simboloMoneda.value);
+    }
+    if (formato24h.present) {
+      map['formato24h'] = Variable<bool>(formato24h.value);
+    }
+    if (recordatorioBackupDias.present) {
+      map['recordatorio_backup_dias'] = Variable<int>(
+        recordatorioBackupDias.value,
+      );
+    }
+    if (ultimaExportacion.present) {
+      map['ultima_exportacion'] = Variable<DateTime>(ultimaExportacion.value);
+    }
+    if (vibracionActiva.present) {
+      map['vibracion_activa'] = Variable<bool>(vibracionActiva.value);
+    }
     return map;
   }
 
@@ -3834,7 +4064,12 @@ class AjustesCompanion extends UpdateCompanion<Ajuste> {
     return (StringBuffer('AjustesCompanion(')
           ..write('id: $id, ')
           ..write('nombreNegocio: $nombreNegocio, ')
-          ..write('alertaMinutos: $alertaMinutos')
+          ..write('alertaMinutos: $alertaMinutos, ')
+          ..write('simboloMoneda: $simboloMoneda, ')
+          ..write('formato24h: $formato24h, ')
+          ..write('recordatorioBackupDias: $recordatorioBackupDias, ')
+          ..write('ultimaExportacion: $ultimaExportacion, ')
+          ..write('vibracionActiva: $vibracionActiva')
           ..write(')'))
         .toString();
   }
@@ -4543,7 +4778,6 @@ typedef $$CuentasTableCreateCompanionBuilder =
       Value<String> estado,
       required DateTime abiertaEn,
       Value<DateTime?> cerradaEn,
-      Value<bool> esDirecta,
     });
 typedef $$CuentasTableUpdateCompanionBuilder =
     CuentasCompanion Function({
@@ -4553,7 +4787,6 @@ typedef $$CuentasTableUpdateCompanionBuilder =
       Value<String> estado,
       Value<DateTime> abiertaEn,
       Value<DateTime?> cerradaEn,
-      Value<bool> esDirecta,
     });
 
 class $$CuentasTableFilterComposer
@@ -4592,11 +4825,6 @@ class $$CuentasTableFilterComposer
 
   ColumnFilters<DateTime> get cerradaEn => $composableBuilder(
     column: $table.cerradaEn,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get esDirecta => $composableBuilder(
-    column: $table.esDirecta,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -4639,11 +4867,6 @@ class $$CuentasTableOrderingComposer
     column: $table.cerradaEn,
     builder: (column) => ColumnOrderings(column),
   );
-
-  ColumnOrderings<bool> get esDirecta => $composableBuilder(
-    column: $table.esDirecta,
-    builder: (column) => ColumnOrderings(column),
-  );
 }
 
 class $$CuentasTableAnnotationComposer
@@ -4672,9 +4895,6 @@ class $$CuentasTableAnnotationComposer
 
   GeneratedColumn<DateTime> get cerradaEn =>
       $composableBuilder(column: $table.cerradaEn, builder: (column) => column);
-
-  GeneratedColumn<bool> get esDirecta =>
-      $composableBuilder(column: $table.esDirecta, builder: (column) => column);
 }
 
 class $$CuentasTableTableManager
@@ -4711,7 +4931,6 @@ class $$CuentasTableTableManager
                 Value<String> estado = const Value.absent(),
                 Value<DateTime> abiertaEn = const Value.absent(),
                 Value<DateTime?> cerradaEn = const Value.absent(),
-                Value<bool> esDirecta = const Value.absent(),
               }) => CuentasCompanion(
                 id: id,
                 mesaId: mesaId,
@@ -4719,7 +4938,6 @@ class $$CuentasTableTableManager
                 estado: estado,
                 abiertaEn: abiertaEn,
                 cerradaEn: cerradaEn,
-                esDirecta: esDirecta,
               ),
           createCompanionCallback:
               ({
@@ -4729,7 +4947,6 @@ class $$CuentasTableTableManager
                 Value<String> estado = const Value.absent(),
                 required DateTime abiertaEn,
                 Value<DateTime?> cerradaEn = const Value.absent(),
-                Value<bool> esDirecta = const Value.absent(),
               }) => CuentasCompanion.insert(
                 id: id,
                 mesaId: mesaId,
@@ -4737,7 +4954,6 @@ class $$CuentasTableTableManager
                 estado: estado,
                 abiertaEn: abiertaEn,
                 cerradaEn: cerradaEn,
-                esDirecta: esDirecta,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -5690,12 +5906,22 @@ typedef $$AjustesTableCreateCompanionBuilder =
       Value<int> id,
       Value<String> nombreNegocio,
       Value<int> alertaMinutos,
+      Value<String> simboloMoneda,
+      Value<bool> formato24h,
+      Value<int> recordatorioBackupDias,
+      Value<DateTime?> ultimaExportacion,
+      Value<bool> vibracionActiva,
     });
 typedef $$AjustesTableUpdateCompanionBuilder =
     AjustesCompanion Function({
       Value<int> id,
       Value<String> nombreNegocio,
       Value<int> alertaMinutos,
+      Value<String> simboloMoneda,
+      Value<bool> formato24h,
+      Value<int> recordatorioBackupDias,
+      Value<DateTime?> ultimaExportacion,
+      Value<bool> vibracionActiva,
     });
 
 class $$AjustesTableFilterComposer
@@ -5719,6 +5945,31 @@ class $$AjustesTableFilterComposer
 
   ColumnFilters<int> get alertaMinutos => $composableBuilder(
     column: $table.alertaMinutos,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get simboloMoneda => $composableBuilder(
+    column: $table.simboloMoneda,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get formato24h => $composableBuilder(
+    column: $table.formato24h,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get recordatorioBackupDias => $composableBuilder(
+    column: $table.recordatorioBackupDias,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get ultimaExportacion => $composableBuilder(
+    column: $table.ultimaExportacion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get vibracionActiva => $composableBuilder(
+    column: $table.vibracionActiva,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -5746,6 +5997,31 @@ class $$AjustesTableOrderingComposer
     column: $table.alertaMinutos,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get simboloMoneda => $composableBuilder(
+    column: $table.simboloMoneda,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get formato24h => $composableBuilder(
+    column: $table.formato24h,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get recordatorioBackupDias => $composableBuilder(
+    column: $table.recordatorioBackupDias,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get ultimaExportacion => $composableBuilder(
+    column: $table.ultimaExportacion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get vibracionActiva => $composableBuilder(
+    column: $table.vibracionActiva,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$AjustesTableAnnotationComposer
@@ -5767,6 +6043,31 @@ class $$AjustesTableAnnotationComposer
 
   GeneratedColumn<int> get alertaMinutos => $composableBuilder(
     column: $table.alertaMinutos,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get simboloMoneda => $composableBuilder(
+    column: $table.simboloMoneda,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get formato24h => $composableBuilder(
+    column: $table.formato24h,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get recordatorioBackupDias => $composableBuilder(
+    column: $table.recordatorioBackupDias,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get ultimaExportacion => $composableBuilder(
+    column: $table.ultimaExportacion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get vibracionActiva => $composableBuilder(
+    column: $table.vibracionActiva,
     builder: (column) => column,
   );
 }
@@ -5802,20 +6103,40 @@ class $$AjustesTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<String> nombreNegocio = const Value.absent(),
                 Value<int> alertaMinutos = const Value.absent(),
+                Value<String> simboloMoneda = const Value.absent(),
+                Value<bool> formato24h = const Value.absent(),
+                Value<int> recordatorioBackupDias = const Value.absent(),
+                Value<DateTime?> ultimaExportacion = const Value.absent(),
+                Value<bool> vibracionActiva = const Value.absent(),
               }) => AjustesCompanion(
                 id: id,
                 nombreNegocio: nombreNegocio,
                 alertaMinutos: alertaMinutos,
+                simboloMoneda: simboloMoneda,
+                formato24h: formato24h,
+                recordatorioBackupDias: recordatorioBackupDias,
+                ultimaExportacion: ultimaExportacion,
+                vibracionActiva: vibracionActiva,
               ),
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
                 Value<String> nombreNegocio = const Value.absent(),
                 Value<int> alertaMinutos = const Value.absent(),
+                Value<String> simboloMoneda = const Value.absent(),
+                Value<bool> formato24h = const Value.absent(),
+                Value<int> recordatorioBackupDias = const Value.absent(),
+                Value<DateTime?> ultimaExportacion = const Value.absent(),
+                Value<bool> vibracionActiva = const Value.absent(),
               }) => AjustesCompanion.insert(
                 id: id,
                 nombreNegocio: nombreNegocio,
                 alertaMinutos: alertaMinutos,
+                simboloMoneda: simboloMoneda,
+                formato24h: formato24h,
+                recordatorioBackupDias: recordatorioBackupDias,
+                ultimaExportacion: ultimaExportacion,
+                vibracionActiva: vibracionActiva,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

@@ -70,6 +70,15 @@ class GrupoVariante {
       );
 }
 
+// ¿Alguna opción (o sub-opción anidada, en cualquier grupo) cuesta más que
+// la base? Solo en ese caso vale la pena mostrar un "+" junto al precio —
+// tener variantes no implica que alguna cueste extra (ej. solo "Sabor").
+bool tieneRecargoReal(List<GrupoVariante> grupos) {
+  bool enOpciones(List<OpcionVariante> ops) =>
+      ops.any((o) => o.delta > 0 || enOpciones(o.hijas));
+  return grupos.any((g) => enOpciones(g.opciones));
+}
+
 List<GrupoVariante> gruposDeJson(String texto) {
   if (texto.isEmpty) return const [];
   final dato = jsonDecode(texto);

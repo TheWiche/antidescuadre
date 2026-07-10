@@ -4,7 +4,6 @@
 // La canasta vive abajo y se confirma en un solo gesto.
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -13,6 +12,7 @@ import '../datos/modelos.dart';
 import '../datos/proveedores.dart';
 import '../logica/cuentas.dart';
 import '../logica/dinero.dart';
+import '../servicios/haptico.dart';
 import '../tema/tema.dart';
 import '../widgets/comunes.dart';
 import '../widgets/hoja.dart';
@@ -61,15 +61,67 @@ class _SelectorProductosState extends ConsumerState<SelectorProductos> {
       }
       _reboteId = producto.id;
     });
-    HapticFeedback.lightImpact();
+    Haptico.ligero();
     Future.delayed(const Duration(milliseconds: 350), () {
       if (mounted && _reboteId == producto.id) setState(() => _reboteId = null);
     });
   }
 
+  // Quita 1 de un producto SIN variantes (solo puede haber una línea posible
+  // para él, a diferencia de un producto con variantes que puede tener
+  // varias líneas distintas según la combinación elegida).
+  void _restarSimple(Producto producto) {
+    final i = _canasta.indexWhere((l) => l.producto.id == producto.id && l.variantes.isEmpty);
+    if (i < 0) return;
+    setState(() {
+      if (_canasta[i].cantidad <= 1) {
+        _canasta.removeAt(i);
+      } else {
+        _canasta[i] = LineaNueva(
+          producto: producto, variantes: const [], cantidad: _canasta[i].cantidad - 1,
+        );
+      }
+    });
+    Haptico.seleccion();
+  }
+
   int _cantidadDe(Producto p) => _canasta
       .where((l) => l.producto.id == p.id)
       .fold(0, (s, l) => s + l.cantidad);
+
+  // Mantener presionado un producto sin variantes: agregar una cantidad
+  // exacta de una vez, para no tener que tocar uno por uno.
+  Future<void> _cantidadRapida(Producto producto) async {
+    final cantidad = await mostrarHoja<int>(context, constructor: (ctx) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TituloHoja('¿Cuántas unidades de «${producto.nombre}»?'),
+            GridView.count(
+              crossAxisCount: 3,
+              shrinkWrap: true,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              childAspectRatio: 1.4,
+              children: [
+                for (final n in const [1, 2, 3, 4, 5, 6])
+                  Material(
+                    color: C.base600,
+                    borderRadius: BorderRadius.circular(14),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () => Navigator.pop(ctx, n),
+                      child: Center(child: Text('$n', style: estiloMono(
+                        tamano: 22, peso: FontWeight.w700,
+                      ))),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ));
+    if (cantidad != null) _sumar(producto, const [], cantidad);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -119,7 +171,7 @@ class _SelectorProductosState extends ConsumerState<SelectorProductos> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: C.ciruela800,
+        backgroundColor: C.base800,
         title: Text(widget.titulo, style: const TextStyle(
           fontFamily: F.display, fontSize: 19, fontWeight: FontWeight.w700,
         )),
@@ -183,17 +235,19 @@ class _SelectorProductosState extends ConsumerState<SelectorProductos> {
               : GridView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 10, 16, 120),
                   gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 190, mainAxisExtent: 96,
+                    maxCrossAxisExtent: 190, mainAxisExtent: 104,
                     crossAxisSpacing: 10, mainAxisSpacing: 10,
                   ),
                   itemCount: visibles.length,
                   itemBuilder: (_, i) {
                     final p = visibles[i];
                     final enCanasta = _cantidadDe(p);
+                    final sinVariantes = gruposDeJson(p.gruposJson).isEmpty;
                     return _TarjetaProducto(
                       producto: p,
                       enCanasta: enCanasta,
                       rebote: _reboteId == p.id,
+                      mostrarStepper: sinVariantes,
                       alTocar: () {
                         final grupos = gruposDeJson(p.gruposJson);
                         if (grupos.isEmpty) {
@@ -202,6 +256,9 @@ class _SelectorProductosState extends ConsumerState<SelectorProductos> {
                           _elegirVariantes(p, grupos);
                         }
                       },
+                      alPresionarLargo: sinVariantes ? () => _cantidadRapida(p) : null,
+                      alIncrementar: sinVariantes ? () => _sumar(p, const [], 1) : null,
+                      alDecrementar: sinVariantes ? () => _restarSimple(p) : null,
                     );
                   },
                 ),
@@ -216,7 +273,7 @@ class _SelectorProductosState extends ConsumerState<SelectorProductos> {
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                  colors: [Color(0x001A111B), C.ciruela900],
+                  colors: [Color(0x00090D16), C.base900],
                   stops: [0, 0.4],
                 ),
               ),
@@ -341,25 +398,35 @@ class _TarjetaProducto extends StatelessWidget {
   final Producto producto;
   final int enCanasta;
   final bool rebote;
+  final bool mostrarStepper; // producto sin variantes: puede ajustarse aquí mismo
   final VoidCallback alTocar;
+  final VoidCallback? alPresionarLargo;
+  final VoidCallback? alIncrementar;
+  final VoidCallback? alDecrementar;
 
   const _TarjetaProducto({
     required this.producto,
     required this.enCanasta,
     required this.rebote,
+    required this.mostrarStepper,
     required this.alTocar,
+    this.alPresionarLargo,
+    this.alIncrementar,
+    this.alDecrementar,
   });
 
   @override
   Widget build(BuildContext context) {
-    final tieneOpciones = producto.gruposJson.length > 2;
+    final tieneRecargo = tieneRecargoReal(gruposDeJson(producto.gruposJson));
+    final conStepper = mostrarStepper && enCanasta > 0;
     return AnimatedScale(
       scale: rebote ? 1.05 : 1,
       duration: const Duration(milliseconds: 170),
       curve: Curves.easeOut,
       child: Stack(clipBehavior: Clip.none, children: [
         Tarjeta(
-          alTocar: alTocar,
+          alTocar: conStepper ? null : alTocar,
+          alPresionarLargo: conStepper ? null : alPresionarLargo,
           relleno: const EdgeInsets.all(13),
           borde: enCanasta > 0 ? C.ambar : null,
           child: Column(
@@ -371,18 +438,25 @@ class _TarjetaProducto extends StatelessWidget {
                     fontWeight: FontWeight.w600, fontSize: 15, height: 1.25,
                   )),
               const Spacer(),
-              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                Text(
-                  dinero(producto.precio) + (tieneOpciones ? ' +' : ''),
-                  style: estiloMono(tamano: 13, color: C.crema60),
-                ),
-                if (tieneOpciones)
-                  const Text('opciones', style: TextStyle(fontSize: 12, color: C.crema38)),
-              ]),
+              if (conStepper)
+                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  _botonMini(LucideIcons.minus, alDecrementar),
+                  Text('$enCanasta', style: estiloMono(tamano: 16, peso: FontWeight.w700)),
+                  _botonMini(LucideIcons.plus, alIncrementar),
+                ])
+              else
+                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  Text(
+                    dinero(producto.precio) + (tieneRecargo ? ' +' : ''),
+                    style: estiloMono(tamano: 13, color: C.crema60),
+                  ),
+                  if (tieneRecargo)
+                    const Text('opciones', style: TextStyle(fontSize: 12, color: C.crema38)),
+                ]),
             ],
           ),
         ),
-        if (enCanasta > 0)
+        if (enCanasta > 0 && !conStepper)
           Positioned(
             top: -7, right: -7,
             child: TweenAnimationBuilder(
@@ -408,6 +482,19 @@ class _TarjetaProducto extends StatelessWidget {
       ]),
     );
   }
+
+  Widget _botonMini(IconData icono, VoidCallback? alTocar) => Material(
+        color: C.ambarSuave,
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: alTocar,
+          child: Padding(
+            padding: const EdgeInsets.all(6),
+            child: Icon(icono, size: 15, color: C.ambar),
+          ),
+        ),
+      );
 }
 
 // Hoja de selección de variantes: recorre cada grupo; dentro de un grupo las
@@ -469,10 +556,9 @@ class _HojaVariantesState extends State<_HojaVariantes> {
                     onTap: () => setState(() =>
                         _caminos[grupo.id] = _caminos[grupo.id]!.sublist(0, i)),
                     child: ChipEstado.ambar(
-                      _caminos[grupo.id]![i].nombre +
-                          (_caminos[grupo.id]![i].delta > 0
-                              ? ' +${dinero(_caminos[grupo.id]![i].delta).substring(1)}'
-                              : '') + '  ✕',
+                      '${_caminos[grupo.id]![i].nombre}'
+                      '${_caminos[grupo.id]![i].delta > 0 ? ' +${dinero(_caminos[grupo.id]![i].delta).substring(1)}' : ''}'
+                      '  ✕',
                     ),
                   ),
               ]),
@@ -483,7 +569,7 @@ class _HojaVariantesState extends State<_HojaVariantes> {
                   ? grupo.opciones
                   : _caminos[grupo.id]!.last.hijas))
                 Material(
-                  color: C.ciruela600,
+                  color: C.base600,
                   borderRadius: BorderRadius.circular(14),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(14),

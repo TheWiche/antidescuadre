@@ -7,6 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../datos/proveedores.dart';
+import '../logica/dinero.dart';
+import '../servicios/haptico.dart';
 import '../servicios/notificaciones.dart';
 import '../tema/tema.dart';
 import 'comprobantes.dart';
@@ -14,7 +16,6 @@ import 'mas.dart';
 import 'mesas.dart';
 import 'pendientes.dart';
 import 'resumen.dart';
-import 'vender.dart';
 
 class PantallaRaiz extends ConsumerStatefulWidget {
   const PantallaRaiz({super.key});
@@ -26,14 +27,25 @@ class PantallaRaiz extends ConsumerStatefulWidget {
 class _PantallaRaizState extends ConsumerState<PantallaRaiz> {
   int _pestana = 0;
 
-  static const _titulos = ['Turno', 'Mesas', 'Vender', 'Por entregar', 'Más'];
+  static const _titulos = ['Turno', 'Mesas', 'Por entregar', 'Más'];
   static const _iconos = [
     LucideIcons.receipt,
     LucideIcons.layoutGrid,
-    LucideIcons.beer,
     LucideIcons.clipboardList,
     LucideIcons.menu,
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Cubre el arranque en frío con pendientes ya existentes (ref.listen no
+    // captura el primer valor emitido por el stream, solo cambios luego de
+    // registrarse).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Notificaciones.actualizarPendientes(ref.read(pendientesLegalizarProv).value ?? 0);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,11 +56,21 @@ class _PantallaRaizState extends ConsumerState<PantallaRaiz> {
       Notificaciones.actualizarPendientes(ahora.value ?? 0);
     });
 
+    // Sincronizar los ajustes de personalización con los servicios estáticos
+    // (evita pasar parámetros nuevos por decenas de call sites, ver §5 plan).
+    // Se aplica en cada build (no solo con ref.listen) para que el primer
+    // valor emitido por el stream —que ref.listen no captura— también cuente.
+    final ajustesActuales = ref.watch(ajustesProv).value;
+    if (ajustesActuales != null) {
+      Haptico.activo = ajustesActuales.vibracionActiva;
+      Formato.simbolo = ajustesActuales.simboloMoneda;
+      Formato.horas24 = ajustesActuales.formato24h;
+    }
+
     return Scaffold(
       body: IndexedStack(index: _pestana, children: const [
         PantallaResumen(),
         PantallaMesas(),
-        PantallaVender(),
         PantallaPendientes(),
         PantallaMas(),
       ]),
@@ -95,7 +117,7 @@ class _PantallaRaizState extends ConsumerState<PantallaRaiz> {
         ),
         Container(
           decoration: const BoxDecoration(
-            color: Color(0xEB1A111B),
+            color: Color(0xEB090D16),
             border: Border(top: BorderSide(color: C.crema07)),
           ),
           child: SafeArea(

@@ -17,10 +17,14 @@ Future<Map<String, dynamic>> exportarConfiguracion(BaseDatos db) async {
       .get();
   return {
     'app': 'antidescuadre',
-    'version': 1,
+    'version': 2,
     'exportadoEn': DateTime.now().toIso8601String(),
     'nombreNegocio': ajustes?.nombreNegocio ?? 'Mi bar',
     'alertaMinutos': ajustes?.alertaMinutos ?? 10,
+    'simboloMoneda': ajustes?.simboloMoneda ?? '\$',
+    'formato24h': ajustes?.formato24h ?? false,
+    'recordatorioBackupDias': ajustes?.recordatorioBackupDias ?? 0,
+    'vibracionActiva': ajustes?.vibracionActiva ?? true,
     'categorias': [
       for (final c in categorias) {'id': c.id, 'nombre': c.nombre, 'padreId': c.padreId},
     ],
@@ -42,7 +46,11 @@ Future<Map<String, dynamic>> exportarConfiguracion(BaseDatos db) async {
 
 Map<String, dynamic>? validarConfiguracion(Object? dato) {
   if (dato is! Map<String, dynamic>) return null;
-  if (dato['app'] != 'antidescuadre' || dato['version'] != 1) return null;
+  // Acepta versión 1 (archivos viejos) y 2; los campos nuevos que falten
+  // caen a sus valores por defecto al importar.
+  if (dato['app'] != 'antidescuadre' || (dato['version'] != 1 && dato['version'] != 2)) {
+    return null;
+  }
   if (dato['categorias'] is! List || dato['productos'] is! List || dato['mesas'] is! List) {
     return null;
   }
@@ -105,5 +113,9 @@ Future<void> importarConfiguracion(BaseDatos db, Map<String, dynamic> config) as
   await db.guardarAjustes(
     nombreNegocio: config['nombreNegocio'] as String? ?? 'Mi bar',
     alertaMinutos: config['alertaMinutos'] as int? ?? 10,
+    simboloMoneda: config['simboloMoneda'] as String? ?? '\$',
+    formato24h: config['formato24h'] as bool? ?? false,
+    recordatorioBackupDias: config['recordatorioBackupDias'] as int? ?? 0,
+    vibracionActiva: config['vibracionActiva'] as bool? ?? true,
   );
 }

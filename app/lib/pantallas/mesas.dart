@@ -102,7 +102,7 @@ class _Cuadricula extends ConsumerWidget {
                         .length;
                 final ocupada = cuenta != null;
                 return Tarjeta(
-                  fondo: ocupada ? C.ciruela600 : null,
+                  fondo: ocupada ? C.base600 : null,
                   borde: ocupada ? C.ambar : null,
                   alTocar: () => Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => PantallaMesaDetalle(mesaId: mesa.id),

@@ -2,11 +2,11 @@
 // turno y stepper de cantidad.
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../datos/proveedores.dart';
+import '../servicios/haptico.dart';
 import '../tema/tema.dart';
 
 class Vacio extends StatelessWidget {
@@ -34,7 +34,7 @@ class Vacio extends StatelessWidget {
 
 // Sello de goma sobre la pantalla: "CUENTA SALDADA", "VENTA COBRADA"…
 Future<void> mostrarSello(BuildContext context, String texto) async {
-  HapticFeedback.mediumImpact();
+  Haptico.medio();
   // Cierre automático fiable: capturamos el navegador raíz antes de mostrar y
   // programamos el pop sobre él (no dependemos del `mounted` del pageBuilder,
   // que puede no dispararse y dejaría la barrera bloqueando toda la app).
@@ -48,7 +48,7 @@ Future<void> mostrarSello(BuildContext context, String texto) async {
   });
   await showGeneralDialog(
     context: context,
-    barrierColor: const Color(0xBF0C060D),
+    barrierColor: const Color(0xBF090D16),
     barrierDismissible: false,
     transitionDuration: const Duration(milliseconds: 320),
     pageBuilder: (ctx, _, _) => const SizedBox.shrink(),
@@ -135,7 +135,7 @@ class Stepper2 extends StatelessWidget {
           customBorder: const CircleBorder(),
           onTap: alTocar == null
               ? null
-              : () { HapticFeedback.selectionClick(); alTocar(); },
+              : () { Haptico.seleccion(); alTocar(); },
           child: Padding(
             padding: const EdgeInsets.all(10),
             child: Icon(icono, size: 17, color: alTocar == null ? C.crema38 : C.crema),

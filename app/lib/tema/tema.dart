@@ -1,37 +1,37 @@
-// Sistema de diseño "La comanda de la casa" — el mismo lenguaje de la marca:
-// ciruela de medianoche, ámbar cerveza (efectivo/acción), cian eléctrico
-// (transferencias), menta (entregado/pagado), crema (texto), rojo (alerta).
+// Sistema de diseño "Medianoche Joya" — azul-negro profundo con ámbar dorado
+// (efectivo/acción), zafiro (transferencias), esmeralda (entregado/pagado),
+// rubí (alerta) y un papel de ticket en crema cálido como elemento firma.
 
 import 'package:flutter/material.dart';
 
 abstract final class C {
-  static const ciruela900 = Color(0xFF1A111B);
-  static const ciruela800 = Color(0xFF221723);
-  static const ciruela700 = Color(0xFF2F2130);
-  static const ciruela600 = Color(0xFF3D2C3E);
-  static const crema = Color(0xFFF7EFE3);
-  static const crema60 = Color(0x99F7EFE3);
-  static const crema38 = Color(0x61F7EFE3);
-  static const crema12 = Color(0x1FF7EFE3);
-  static const crema07 = Color(0x12F7EFE3);
-  static const ambar = Color(0xFFF6A83C);
-  static const ambarSuave = Color(0x29F6A83C);
-  static const ambarTinta = Color(0xFF3A2A14);
-  static const cian = Color(0xFF56C8E8);
-  static const cianSuave = Color(0x2656C8E8);
-  static const cianTinta = Color(0xFF0E2A33);
-  static const menta = Color(0xFF6FCF97);
-  static const mentaSuave = Color(0x266FCF97);
-  static const mentaTinta = Color(0xFF0F2A1C);
-  static const rojo = Color(0xFFFF6B6B);
-  static const rojoSuave = Color(0x29FF6B6B);
+  static const base900 = Color(0xFF090D16); // hundido: campos, barra nav, gradientes
+  static const base800 = Color(0xFF0D1220); // fondo base de la app
+  static const base700 = Color(0xFF161D2E); // tarjetas
+  static const base600 = Color(0xFF1E2740); // elevado / variantes anidadas
+  static const crema = Color(0xFFECEEF4);
+  static const crema60 = Color(0x99ECEEF4);
+  static const crema38 = Color(0x61ECEEF4);
+  static const crema12 = Color(0x1FECEEF4);
+  static const crema07 = Color(0x12ECEEF4);
+  static const ambar = Color(0xFFE8B34D);
+  static const ambarSuave = Color(0x29E8B34D);
+  static const ambarTinta = Color(0xFF2B1D06);
+  static const cian = Color(0xFF5B93E0);
+  static const cianSuave = Color(0x265B93E0);
+  static const cianTinta = Color(0xFF0D1A33);
+  static const menta = Color(0xFF4CBE86);
+  static const mentaSuave = Color(0x264CBE86);
+  static const mentaTinta = Color(0xFF07241A);
+  static const rojo = Color(0xFFEB5E5E);
+  static const rojoSuave = Color(0x29EB5E5E);
 
-  // Papel del ticket
-  static const papel = Color(0xFFF7EFE3);
-  static const papelTinta = Color(0xFF2B1E2C);
-  static const papelTintaSuave = Color(0x8C2B1E2C);
-  static const tintaExito = Color(0xFF2E7D54);
-  static const tintaAlerta = Color(0xFFB3541E);
+  // Papel del ticket (elemento firma)
+  static const papel = Color(0xFFF6EFE1);
+  static const papelTinta = Color(0xFF22233A);
+  static const papelTintaSuave = Color(0x8C22233A);
+  static const tintaExito = Color(0xFF1F6B4E);
+  static const tintaAlerta = Color(0xFFA6511F);
 }
 
 abstract final class F {
@@ -59,16 +59,16 @@ ThemeData temaAntiDescuadre() {
     onPrimary: C.ambarTinta,
     secondary: C.cian,
     onSecondary: C.cianTinta,
-    surface: C.ciruela800,
+    surface: C.base700,
     onSurface: C.crema,
-    surfaceContainerHighest: C.ciruela700,
+    surfaceContainerHighest: C.base600,
     error: C.rojo,
   );
 
   return ThemeData(
     useMaterial3: true,
     colorScheme: esquema,
-    scaffoldBackgroundColor: C.ciruela800,
+    scaffoldBackgroundColor: C.base800,
     fontFamily: F.texto,
     splashFactory: InkSparkle.splashFactory,
     textTheme: const TextTheme(
@@ -88,7 +88,7 @@ ThemeData temaAntiDescuadre() {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: C.ciruela900,
+      fillColor: C.base900,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       hintStyle: const TextStyle(color: C.crema38),
       enabledBorder: OutlineInputBorder(
@@ -101,7 +101,7 @@ ThemeData temaAntiDescuadre() {
       ),
     ),
     bottomSheetTheme: const BottomSheetThemeData(
-      backgroundColor: C.ciruela700,
+      backgroundColor: C.base700,
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
@@ -183,6 +183,40 @@ class ChipEstado extends StatelessWidget {
       );
 }
 
+// ---------- Envoltorio táctil: escala sutil al presionar ----------
+// Usa Listener (no compite en la arena de gestos) para no robarle el toque
+// al widget real que maneja el tap — solo observa para animar la presión.
+class _Presionable extends StatefulWidget {
+  final Widget child;
+  final bool activo;
+  const _Presionable({required this.child, required this.activo});
+
+  @override
+  State<_Presionable> createState() => _PresionableState();
+}
+
+class _PresionableState extends State<_Presionable> {
+  bool _presionado = false;
+
+  void _set(bool v) {
+    if (!widget.activo) return;
+    if (_presionado != v) setState(() => _presionado = v);
+  }
+
+  @override
+  Widget build(BuildContext context) => Listener(
+        onPointerDown: (_) => _set(true),
+        onPointerUp: (_) => _set(false),
+        onPointerCancel: (_) => _set(false),
+        child: AnimatedScale(
+          scale: _presionado ? 0.96 : 1,
+          duration: const Duration(milliseconds: 110),
+          curve: Curves.easeOut,
+          child: widget.child,
+        ),
+      );
+}
+
 // ---------- Botones de la casa ----------
 enum TonoBoton { ambar, cian, menta, fantasma, peligro }
 
@@ -213,7 +247,7 @@ class Boton extends StatelessWidget {
       TonoBoton.cian => (C.cian, C.cianTinta, null),
       TonoBoton.menta => (C.menta, C.mentaTinta, null),
       TonoBoton.fantasma => (C.crema07, C.crema, C.crema12),
-      TonoBoton.peligro => (C.rojoSuave, C.rojo, const Color(0x4DFF6B6B)),
+      TonoBoton.peligro => (C.rojoSuave, C.rojo, const Color(0x4DEB5E5E)),
     };
     final boton = FilledButton(
       onPressed: alTocar,
@@ -242,7 +276,8 @@ class Boton extends StatelessWidget {
         ],
       ),
     );
-    return expandir ? SizedBox(width: double.infinity, child: boton) : boton;
+    final envuelto = _Presionable(activo: alTocar != null, child: boton);
+    return expandir ? SizedBox(width: double.infinity, child: envuelto) : envuelto;
   }
 }
 
@@ -253,6 +288,8 @@ class Tarjeta extends StatelessWidget {
   final Color? fondo;
   final Color? borde;
   final VoidCallback? alTocar;
+  final VoidCallback? alPresionarLargo;
+  final bool sombra;
 
   const Tarjeta({
     super.key,
@@ -261,6 +298,8 @@ class Tarjeta extends StatelessWidget {
     this.fondo,
     this.borde,
     this.alTocar,
+    this.alPresionarLargo,
+    this.sombra = true,
   });
 
   @override
@@ -268,19 +307,32 @@ class Tarjeta extends StatelessWidget {
     final caja = Container(
       padding: relleno,
       decoration: BoxDecoration(
-        color: fondo ?? C.ciruela700,
-        borderRadius: BorderRadius.circular(18),
+        color: fondo ?? C.base700,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: borde ?? C.crema07),
+        boxShadow: sombra
+            ? [
+                BoxShadow(
+                  color: C.base900.withValues(alpha: 0.35),
+                  blurRadius: 22,
+                  offset: const Offset(0, 8),
+                ),
+              ]
+            : null,
       ),
       child: child,
     );
-    if (alTocar == null) return caja;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: alTocar,
-        borderRadius: BorderRadius.circular(18),
-        child: caja,
+    if (alTocar == null && alPresionarLargo == null) return caja;
+    return _Presionable(
+      activo: alTocar != null,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: alTocar,
+          onLongPress: alPresionarLargo,
+          borderRadius: BorderRadius.circular(20),
+          child: caja,
+        ),
       ),
     );
   }

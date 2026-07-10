@@ -1,8 +1,15 @@
-// Manejo de dinero: sin moneda configurada (regla 11), formato $ con 2
-// decimales solo cuando hacen falta. Redondeo a centavos para evitar
-// arrastres de coma flotante. Port 1:1 de la lógica ya verificada en web.
+// Manejo de dinero y fecha/hora: el cálculo en sí no exige moneda configurada
+// (regla 11), pero el símbolo mostrado y el formato de hora sí son
+// personalizables desde Ajustes. Se leen de `Formato`, sincronizada una vez
+// desde la raíz de la app — evita pasar parámetros nuevos por los ~11
+// archivos que llaman dinero()/horaCorta(), igual patrón que Haptico.activo.
 
 import 'package:intl/intl.dart';
+
+abstract final class Formato {
+  static String simbolo = '\$';
+  static bool horas24 = false;
+}
 
 double redondear(double n) => (n * 100).roundToDouble() / 100;
 
@@ -13,7 +20,7 @@ String dinero(double n) {
     locale: 'es',
     decimalDigits: tieneCentavos ? 2 : 0,
   );
-  return '\$${formato.format(r)}';
+  return '${Formato.simbolo}${formato.format(r)}';
 }
 
 double leerMonto(String texto) {
@@ -23,7 +30,8 @@ double leerMonto(String texto) {
   return redondear(n);
 }
 
-String horaCorta(DateTime t) => DateFormat.jm('es').format(t);
+String horaCorta(DateTime t) =>
+    (Formato.horas24 ? DateFormat.Hm('es') : DateFormat.jm('es')).format(t);
 
 String fechaCorta(DateTime t) => DateFormat('EEE d MMM', 'es').format(t);
 

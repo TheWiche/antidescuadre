@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../servicios/haptico.dart';
 import '../tema/tema.dart';
 
 class PantallaCamara extends StatefulWidget {
@@ -78,7 +79,7 @@ class _PantallaCamaraState extends State<PantallaCamara> {
     try {
       final archivo = await c.takePicture();
       final bytes = await archivo.readAsBytes();
-      HapticFeedback.mediumImpact();
+      Haptico.medio();
       setState(() {
         _captura = bytes;
         _rotacion = 0;
@@ -118,9 +119,9 @@ class _PantallaCamaraState extends State<PantallaCamara> {
   Widget build(BuildContext context) {
     final c = _controlador;
     return Scaffold(
-      backgroundColor: const Color(0xFF0C060D),
+      backgroundColor: C.base900,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0C060D),
+        backgroundColor: C.base900,
         title: Text(widget.titulo, style: const TextStyle(
           fontFamily: F.display, fontSize: 18, fontWeight: FontWeight.w700,
         )),

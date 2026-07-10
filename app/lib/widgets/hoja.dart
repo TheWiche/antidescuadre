@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 
 import '../tema/tema.dart';
+import 'deslizar.dart';
 
 Future<T?> mostrarHoja<T>(BuildContext context, {required WidgetBuilder constructor}) =>
     showModalBottomSheet<T>(
@@ -53,11 +54,11 @@ Future<bool> confirmar(
         children: [
           TituloHoja(titulo, sub: detalle),
           const SizedBox(height: 8),
-          Boton(
-            textoConfirmar,
-            tono: peligro ? TonoBoton.peligro : TonoBoton.ambar,
-            expandir: true,
-            alTocar: () => Navigator.pop(ctx, true),
+          DeslizarConfirmar(
+            texto: 'Desliza para ${textoConfirmar.toLowerCase()}',
+            color: peligro ? C.rojo : C.ambar,
+            colorPerilla: peligro ? C.crema : C.ambarTinta,
+            alConfirmar: () => Navigator.pop(ctx, true),
           ),
           const SizedBox(height: 10),
           Boton('Cancelar', tono: TonoBoton.fantasma, expandir: true,

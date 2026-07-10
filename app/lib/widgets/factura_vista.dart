@@ -12,16 +12,17 @@ import '../logica/factura.dart';
 import '../tema/tema.dart';
 import '../tema/ticket.dart';
 
+// No se muestra el alias/apodo de la mesa: la factura es algo que puede
+// compartirse fuera de la barra, y el apodo interno de la mesa no debería
+// revelarse "por si acaso".
 class FacturaVista extends StatefulWidget {
   final String nombreNegocio;
-  final String alias;
   final DateTime fecha;
   final List<Item> items;
 
   const FacturaVista({
     super.key,
     required this.nombreNegocio,
-    required this.alias,
     required this.fecha,
     required this.items,
   });
@@ -42,7 +43,7 @@ class _FacturaVistaState extends State<FacturaVista> {
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: C.ciruela900,
+              color: C.base900,
               borderRadius: BorderRadius.circular(99),
             ),
             child: Row(children: [
@@ -77,7 +78,7 @@ class _FacturaVistaState extends State<FacturaVista> {
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               TicketCabecera(
                 titulo: widget.nombreNegocio,
-                meta: '${widget.alias} · ${fechaLarga(widget.fecha)}',
+                meta: fechaLarga(widget.fecha),
               ),
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 180),
@@ -119,10 +120,8 @@ class _FacturaVistaState extends State<FacturaVista> {
           Boton('Compartir factura', icono: LucideIcons.share2, tono: TonoBoton.fantasma,
               expandir: true, alTocar: () {
             SharePlus.instance.share(ShareParams(
-              text: facturaComoTexto(
-                widget.nombreNegocio, widget.alias, widget.items, _modo,
-              ),
-              subject: 'Cuenta · ${widget.alias}',
+              text: facturaComoTexto(widget.nombreNegocio, widget.items, _modo),
+              subject: 'Factura · ${fechaLarga(widget.fecha)}',
             ));
           }),
         ],

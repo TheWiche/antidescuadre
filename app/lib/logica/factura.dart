@@ -83,11 +83,10 @@ List<LineaAgrupada> facturaAgrupada(List<Item> itemsCuenta) {
 
 String facturaComoTexto(
   String nombreNegocio,
-  String alias,
   List<Item> itemsCuenta,
   String modo, // 'cronologica' | 'agrupada'
 ) {
-  final lineas = <String>[nombreNegocio.toUpperCase(), alias, '·' * 24];
+  final lineas = <String>[nombreNegocio.toUpperCase(), '·' * 24];
   if (modo == 'cronologica') {
     for (final tanda in facturaCronologica(itemsCuenta)) {
       lineas.add('— ${horaCorta(tanda.hora)} —');

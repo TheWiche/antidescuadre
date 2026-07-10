@@ -36,12 +36,11 @@ class Productos extends Table {
 
 class Cuentas extends Table {
   IntColumn get id => integer().autoIncrement()();
-  IntColumn get mesaId => integer().nullable()(); // null = venta directa
+  IntColumn get mesaId => integer().nullable()();
   IntColumn get turnoId => integer()();
   TextColumn get estado => text().withDefault(const Constant('abierta'))(); // abierta | cerrada
   DateTimeColumn get abiertaEn => dateTime()();
   DateTimeColumn get cerradaEn => dateTime().nullable()();
-  BoolColumn get esDirecta => boolean().withDefault(const Constant(false))();
 }
 
 class Items extends Table {
@@ -91,6 +90,11 @@ class Ajustes extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get nombreNegocio => text().withDefault(const Constant('Mi bar'))();
   IntColumn get alertaMinutos => integer().withDefault(const Constant(10))(); // único valor global (regla 13)
+  TextColumn get simboloMoneda => text().withDefault(const Constant('\$'))();
+  BoolColumn get formato24h => boolean().withDefault(const Constant(false))();
+  IntColumn get recordatorioBackupDias => integer().withDefault(const Constant(0))(); // 0 = desactivado
+  DateTimeColumn get ultimaExportacion => dateTime().nullable()();
+  BoolColumn get vibracionActiva => boolean().withDefault(const Constant(true))();
 }
 
 @DriftDatabase(tables: [
@@ -102,24 +106,63 @@ class BaseDatos extends _$BaseDatos {
   BaseDatos.prueba(super.e); // para tests con NativeDatabase.memory()
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (m) => m.createAll(),
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.dropColumn(cuentas, 'es_directa');
+            await m.addColumn(ajustes, ajustes.simboloMoneda);
+            await m.addColumn(ajustes, ajustes.formato24h);
+            await m.addColumn(ajustes, ajustes.recordatorioBackupDias);
+            await m.addColumn(ajustes, ajustes.ultimaExportacion);
+            await m.addColumn(ajustes, ajustes.vibracionActiva);
+          }
+        },
+      );
 
   // ---------- Ajustes ----------
-  Stream<Ajuste> verAjustes() =>
-      select(ajustes).watchSingleOrNull().map((a) =>
-          a ?? const Ajuste(id: 0, nombreNegocio: 'Mi bar', alertaMinutos: 10));
+  Stream<Ajuste> verAjustes() => select(ajustes).watchSingleOrNull().map((a) =>
+      a ??
+      const Ajuste(
+        id: 0, nombreNegocio: 'Mi bar', alertaMinutos: 10,
+        simboloMoneda: '\$', formato24h: false, recordatorioBackupDias: 0,
+        vibracionActiva: true,
+      ));
 
-  Future<void> guardarAjustes({String? nombreNegocio, int? alertaMinutos}) async {
+  Future<void> guardarAjustes({
+    String? nombreNegocio,
+    int? alertaMinutos,
+    String? simboloMoneda,
+    bool? formato24h,
+    int? recordatorioBackupDias,
+    DateTime? ultimaExportacion,
+    bool? vibracionActiva,
+  }) async {
     final actual = await select(ajustes).getSingleOrNull();
     if (actual == null) {
       await into(ajustes).insert(AjustesCompanion.insert(
         nombreNegocio: Value(nombreNegocio ?? 'Mi bar'),
         alertaMinutos: Value(alertaMinutos ?? 10),
+        simboloMoneda: Value(simboloMoneda ?? '\$'),
+        formato24h: Value(formato24h ?? false),
+        recordatorioBackupDias: Value(recordatorioBackupDias ?? 0),
+        ultimaExportacion: Value(ultimaExportacion),
+        vibracionActiva: Value(vibracionActiva ?? true),
       ));
     } else {
       await (update(ajustes)..where((a) => a.id.equals(actual.id))).write(AjustesCompanion(
         nombreNegocio: nombreNegocio != null ? Value(nombreNegocio) : const Value.absent(),
         alertaMinutos: alertaMinutos != null ? Value(alertaMinutos) : const Value.absent(),
+        simboloMoneda: simboloMoneda != null ? Value(simboloMoneda) : const Value.absent(),
+        formato24h: formato24h != null ? Value(formato24h) : const Value.absent(),
+        recordatorioBackupDias: recordatorioBackupDias != null
+            ? Value(recordatorioBackupDias) : const Value.absent(),
+        ultimaExportacion:
+            ultimaExportacion != null ? Value(ultimaExportacion) : const Value.absent(),
+        vibracionActiva: vibracionActiva != null ? Value(vibracionActiva) : const Value.absent(),
       ));
     }
   }
@@ -163,6 +206,22 @@ class BaseDatos extends _$BaseDatos {
     await (update(cuentas)..where((c) => c.id.equals(cuentaId))).write(CuentasCompanion(
       estado: const Value('cerrada'),
       cerradaEn: Value(DateTime.now()),
+    ));
+  }
+
+  // Cuentas cerradas de una mesa dentro del turno activo: permite "rescatar"
+  // una cuenta recién saldada en vez de abrir una nueva desde cero.
+  Stream<List<Cuenta>> verCuentasCerradasDeMesa(int mesaId, int turnoId) => (select(cuentas)
+        ..where((c) =>
+            c.mesaId.equals(mesaId) & c.turnoId.equals(turnoId) & c.estado.equals('cerrada'))
+        ..orderBy([(c) => OrderingTerm.desc(c.cerradaEn)])
+        ..limit(5))
+      .watch();
+
+  Future<void> reabrirCuenta(int cuentaId) async {
+    await (update(cuentas)..where((c) => c.id.equals(cuentaId))).write(const CuentasCompanion(
+      estado: Value('abierta'),
+      cerradaEn: Value(null),
     ));
   }
 

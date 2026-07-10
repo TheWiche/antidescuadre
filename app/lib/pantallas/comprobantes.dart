@@ -5,7 +5,6 @@ import 'dart:io';
 
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -13,9 +12,11 @@ import '../datos/base.dart';
 import '../datos/proveedores.dart';
 import '../logica/dinero.dart';
 import '../servicios/fotos.dart';
+import '../servicios/haptico.dart';
 import '../tema/tema.dart';
 import '../widgets/camara.dart';
 import '../widgets/comunes.dart';
+import '../widgets/deslizar.dart';
 
 final _comprobantesProv = StreamProvider.family<List<Comprobante>, String>(
   (ref, estado) => ref.watch(baseDatos).verComprobantes(estado),
@@ -52,7 +53,7 @@ class _PantallaComprobantesState extends ConsumerState<PantallaComprobantes> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: C.ciruela800,
+        backgroundColor: C.base800,
         centerTitle: true,
         title: const Text('Comprobantes', style: TextStyle(
           fontFamily: F.display, fontSize: 20, fontWeight: FontWeight.w700,
@@ -84,7 +85,7 @@ class _PantallaComprobantesState extends ConsumerState<PantallaComprobantes> {
           Container(
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: C.ciruela900, borderRadius: BorderRadius.circular(99),
+              color: C.base900, borderRadius: BorderRadius.circular(99),
             ),
             child: Row(children: [
               for (final (valor, texto) in [
@@ -145,40 +146,52 @@ class _TarjetaComprobante extends ConsumerWidget {
     final archivo = File(c.rutaArchivo);
 
     return Tarjeta(
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        GestureDetector(
-          onTap: () => _ampliar(context, archivo),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: archivo.existsSync()
-                ? Image.file(archivo, width: 74, height: 74, fit: BoxFit.cover)
-                : Container(width: 74, height: 74, color: C.ciruela900,
-                    child: const Icon(LucideIcons.imageOff, color: C.crema38)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          GestureDetector(
+            onTap: () => _ampliar(context, archivo),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: archivo.existsSync()
+                  ? Image.file(archivo, width: 74, height: 74, fit: BoxFit.cover)
+                  : Container(width: 74, height: 74, color: C.base900,
+                      child: const Icon(LucideIcons.imageOff, color: C.crema38)),
+            ),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(c.aliasMesa ?? 'Captura libre',
-                style: const TextStyle(fontWeight: FontWeight.w700)),
-            Text('${fechaCorta(c.fecha)} · ${horaCorta(c.fecha)}',
-                style: const TextStyle(fontSize: 13, color: C.crema60)),
-            if (c.monto != null)
-              Text(dinero(c.monto!), style: estiloMono(tamano: 13, color: C.cian)),
-            const SizedBox(height: 8),
-            if (pendiente)
-              Boton('Legalizar', icono: LucideIcons.badgeCheck, tono: TonoBoton.cian,
-                  alto: 38, alTocar: () async {
-                HapticFeedback.lightImpact();
-                await ref.read(baseDatos).legalizarComprobante(c.id);
-              })
-            else
-              ChipEstado.menta(
-                'legalizada ${c.legalizadaEn != null ? horaCorta(c.legalizadaEn!) : ''}',
-                icono: LucideIcons.badgeCheck,
-              ),
-          ]),
-        ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(c.aliasMesa ?? 'Captura libre',
+                  style: const TextStyle(fontWeight: FontWeight.w700)),
+              Text('${fechaCorta(c.fecha)} · ${horaCorta(c.fecha)}',
+                  style: const TextStyle(fontSize: 13, color: C.crema60)),
+              if (c.monto != null)
+                Text(dinero(c.monto!), style: estiloMono(tamano: 13, color: C.cian)),
+              if (!pendiente) ...[
+                const SizedBox(height: 8),
+                ChipEstado.menta(
+                  'legalizada ${c.legalizadaEn != null ? horaCorta(c.legalizadaEn!) : ''}',
+                  icono: LucideIcons.badgeCheck,
+                ),
+              ],
+            ]),
+          ),
+        ]),
+        if (pendiente) ...[
+          const SizedBox(height: 12),
+          DeslizarConfirmar(
+            texto: 'Desliza para legalizar',
+            textoConfirmado: 'Legalizada ✓',
+            color: C.cian,
+            colorPerilla: C.cianTinta,
+            icono: LucideIcons.badgeCheck,
+            alto: 46,
+            alConfirmar: () {
+              Haptico.ligero();
+              ref.read(baseDatos).legalizarComprobante(c.id);
+            },
+          ),
+        ],
       ]),
     );
   }
@@ -187,7 +200,7 @@ class _TarjetaComprobante extends ConsumerWidget {
     if (!archivo.existsSync()) return;
     showDialog(
       context: context,
-      barrierColor: const Color(0xF20C060D),
+      barrierColor: const Color(0xF2090D16),
       builder: (ctx) => GestureDetector(
         onTap: () => Navigator.pop(ctx),
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [

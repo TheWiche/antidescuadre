@@ -2,7 +2,7 @@ name: antidescuadre
 description: "Ventas y cobros sin descuadres para bares y restaurantes. Offline, de un solo usuario."
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.1.0+2
 
 environment:
   sdk: ^3.12.2
@@ -29,8 +29,6 @@ dependencies:
   gal: ^2.3.2
 
   # Notificación persistente de comprobantes pendientes (regla 9)
-  flutter_local_notifications: ^19.4.2
-
   # Compartir factura y exportar/importar configuración
   share_plus: ^12.0.1
   file_picker: ^10.3.3
@@ -38,6 +36,7 @@ dependencies:
   # Íconos
   intl: ^0.20.2
   lucide_icons_flutter: ^3.1.14+2
+  flutter_foreground_task: ^9.2.2
 
 dev_dependencies:
   flutter_test:

@@ -14,8 +14,10 @@ import '../datos/proveedores.dart';
 import '../logica/cuentas.dart';
 import '../logica/dinero.dart';
 import '../servicios/fotos.dart';
+import '../servicios/haptico.dart';
 import '../tema/tema.dart';
 import 'camara.dart';
+import 'campo_monto.dart';
 import 'comunes.dart';
 
 class PantallaCobro extends ConsumerStatefulWidget {
@@ -23,7 +25,6 @@ class PantallaCobro extends ConsumerStatefulWidget {
   final int turnoId;
   final int? mesaId;
   final String mesaAlias;
-  final bool soloTotal; // venta directa: cobro inmediato sin división
 
   const PantallaCobro({
     super.key,
@@ -31,7 +32,6 @@ class PantallaCobro extends ConsumerStatefulWidget {
     required this.turnoId,
     required this.mesaId,
     required this.mesaAlias,
-    this.soloTotal = false,
   });
 
   /// Devuelve true si la cuenta quedó saldada (y cerrada).
@@ -41,13 +41,11 @@ class PantallaCobro extends ConsumerStatefulWidget {
     required int turnoId,
     required int? mesaId,
     required String mesaAlias,
-    bool soloTotal = false,
   }) async {
     final r = await Navigator.of(context).push<bool>(MaterialPageRoute(
       fullscreenDialog: true,
       builder: (_) => PantallaCobro(
-        cuentaId: cuentaId, turnoId: turnoId, mesaId: mesaId,
-        mesaAlias: mesaAlias, soloTotal: soloTotal,
+        cuentaId: cuentaId, turnoId: turnoId, mesaId: mesaId, mesaAlias: mesaAlias,
       ),
     ));
     return r ?? false;
@@ -58,7 +56,7 @@ class PantallaCobro extends ConsumerStatefulWidget {
 }
 
 class _PantallaCobroState extends ConsumerState<PantallaCobro> {
-  late String _modo = widget.soloTotal ? 'todo' : 'elegir';
+  String _modo = 'elegir';
   ({String etiqueta, double monto})? _parteActiva;
 
   Future<void> _registrarPago({
@@ -109,7 +107,7 @@ class _PantallaCobroState extends ConsumerState<PantallaCobro> {
     }
     setState(() {
       _parteActiva = null;
-      if (_modo == 'todo' && !widget.soloTotal) _modo = 'elegir';
+      if (_modo == 'todo') _modo = 'elegir';
     });
   }
 
@@ -128,7 +126,7 @@ class _PantallaCobroState extends ConsumerState<PantallaCobro> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: C.ciruela800,
+        backgroundColor: C.base800,
         centerTitle: true,
         title: Text('Cobrar · ${widget.mesaAlias}', style: const TextStyle(
           fontFamily: F.display, fontSize: 19, fontWeight: FontWeight.w700,
@@ -136,9 +134,9 @@ class _PantallaCobroState extends ConsumerState<PantallaCobro> {
         leading: IconButton(
           icon: const Icon(LucideIcons.arrowLeft),
           onPressed: () {
-            if (_parteActiva != null && !widget.soloTotal && _modo != 'todo') {
+            if (_parteActiva != null && _modo != 'todo') {
               setState(() => _parteActiva = null);
-            } else if (_modo != 'elegir' && !widget.soloTotal) {
+            } else if (_modo != 'elegir') {
               setState(() { _parteActiva = null; _modo = 'elegir'; });
             } else {
               Navigator.pop(context, false);
@@ -180,13 +178,7 @@ class _PantallaCobroState extends ConsumerState<PantallaCobro> {
               alCancelar: () {
                 setState(() {
                   _parteActiva = null;
-                  if (_modo == 'todo') {
-                    if (widget.soloTotal) {
-                      Navigator.pop(context, false);
-                    } else {
-                      _modo = 'elegir';
-                    }
-                  }
+                  if (_modo == 'todo') _modo = 'elegir';
                 });
               },
             )
@@ -247,14 +239,33 @@ class _DivisionPorPartes extends StatefulWidget {
 
 class _DivisionPorPartesState extends State<_DivisionPorPartes> {
   int _n = 2;
-  final Map<int, String> _manuales = {};
+  final Map<int, TextEditingController> _controladores = {};
+  final Map<int, bool> _editadoManual = {};
+
+  @override
+  void dispose() {
+    for (final c in _controladores.values) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  TextEditingController _controladorPara(int i, double valorPorDefecto) {
+    final existente = _controladores[i];
+    if (existente != null) return existente;
+    final nuevo = TextEditingController(text: '$valorPorDefecto');
+    _controladores[i] = nuevo;
+    return nuevo;
+  }
 
   @override
   Widget build(BuildContext context) {
     final iguales = partesIguales(widget.saldo, _n);
     final partes = [
       for (var i = 0; i < _n; i++)
-        _manuales.containsKey(i) ? leerMonto(_manuales[i]!) : iguales[i],
+        (_editadoManual[i] ?? false)
+            ? leerMonto(_controladorPara(i, iguales[i]).text)
+            : iguales[i],
     ];
     final suma = redondear(partes.fold(0.0, (s, p) => s + p));
 
@@ -262,37 +273,40 @@ class _DivisionPorPartesState extends State<_DivisionPorPartes> {
       Tarjeta(
         child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           const Text('¿En cuántas partes?', style: TextStyle(fontWeight: FontWeight.w600)),
-          Stepper2(valor: _n, minimo: 2,
-              alCambiar: (v) => setState(() { _n = v.clamp(2, 20); _manuales.clear(); })),
+          Stepper2(valor: _n, minimo: 2, alCambiar: (v) => setState(() {
+            _n = v.clamp(2, 20);
+            for (final c in _controladores.values) {
+              c.dispose();
+            }
+            _controladores.clear();
+            _editadoManual.clear();
+          })),
         ]),
       ),
       const SizedBox(height: 12),
       for (var i = 0; i < _n; i++) ...[
         Tarjeta(
-          child: Row(children: [
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('Parte ${i + 1} de $_n', style: const TextStyle(fontWeight: FontWeight.w600)),
-                const SizedBox(height: 6),
-                SizedBox(
-                  width: 120,
-                  child: TextFormField(
-                    initialValue: _manuales[i] ?? '${partes[i]}',
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    style: estiloMono(),
-                    onChanged: (v) => setState(() => _manuales[i] = v),
-                    decoration: const InputDecoration(
-                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    ),
-                  ),
+                const SizedBox(height: 8),
+                CampoMonto(
+                  controlador: _controladorPara(i, iguales[i]),
+                  color: C.ambar,
+                  alCambiar: () => setState(() => _editadoManual[i] = true),
                 ),
               ]),
             ),
-            Boton('Cobrar',
-                alTocar: partes[i] > 0 && partes[i] <= widget.saldo + 0.005
-                    ? () => widget.alCobrarParte(
-                        (etiqueta: 'Parte ${i + 1} de $_n', monto: partes[i]))
-                    : null),
+            const SizedBox(width: 10),
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Boton('Cobrar',
+                  alTocar: partes[i] > 0 && partes[i] <= widget.saldo + 0.005
+                      ? () => widget.alCobrarParte(
+                          (etiqueta: 'Parte ${i + 1} de $_n', monto: partes[i]))
+                      : null),
+            ),
           ]),
         ),
         const SizedBox(height: 12),
@@ -504,6 +518,7 @@ class _FormularioParteState extends State<_FormularioParte> {
   late final _efectivoCtrl = TextEditingController(text: '${widget.montoInicial}');
   late final _transferCtrl = TextEditingController(text: '0');
   final _recibidoCtrl = TextEditingController();
+  String _metodo = 'efectivo'; // efectivo | transferencia | mixto
   bool _guardando = false;
 
   @override
@@ -514,9 +529,41 @@ class _FormularioParteState extends State<_FormularioParte> {
     super.dispose();
   }
 
-  void _repartir(bool todoEfectivo) => setState(() {
-        _efectivoCtrl.text = todoEfectivo ? '${widget.montoInicial}' : '0';
-        _transferCtrl.text = todoEfectivo ? '0' : '${widget.montoInicial}';
+  void _elegirMetodo(String m) => setState(() {
+        _metodo = m;
+        switch (m) {
+          case 'efectivo':
+            _efectivoCtrl.text = '${widget.montoInicial}';
+            _transferCtrl.text = '0';
+          case 'transferencia':
+            _efectivoCtrl.text = '0';
+            _transferCtrl.text = '${widget.montoInicial}';
+          case 'mixto':
+            final mitad = redondear(widget.montoInicial / 2);
+            _efectivoCtrl.text = '$mitad';
+            _transferCtrl.text = '${redondear(widget.montoInicial - mitad)}';
+        }
+      });
+
+  void _repartirSlider(double fraccionEfectivo) => setState(() {
+        final efectivo = redondear(widget.montoInicial * fraccionEfectivo);
+        _efectivoCtrl.text = '$efectivo';
+        _transferCtrl.text = '${redondear(widget.montoInicial - efectivo)}';
+      });
+
+  void _cambioEfectivo() => setState(() {
+        final resto = redondear(widget.montoInicial - leerMonto(_efectivoCtrl.text));
+        _transferCtrl.text = '${resto > 0 ? resto : 0}';
+      });
+
+  void _cambioTransferencia() => setState(() {
+        final resto = redondear(widget.montoInicial - leerMonto(_transferCtrl.text));
+        _efectivoCtrl.text = '${resto > 0 ? resto : 0}';
+      });
+
+  void _recibidoRapido(double? extra) => setState(() {
+        final efectivo = leerMonto(_efectivoCtrl.text);
+        _recibidoCtrl.text = extra == null ? '$efectivo' : '${efectivo + extra}';
       });
 
   Future<void> _terminar() async {
@@ -535,6 +582,7 @@ class _FormularioParteState extends State<_FormularioParte> {
           titulo: 'Comprobante · ${dinero(transferencia)}');
       if (foto == null) return; // canceló la cámara: no se cobra
     }
+    Haptico.medio();
     setState(() => _guardando = true);
     widget.alConfirmar(DatosPago(
       etiqueta: widget.etiqueta,
@@ -556,6 +604,8 @@ class _FormularioParteState extends State<_FormularioParte> {
         _recibidoCtrl.text.trim().isEmpty ? null : leerMonto(_recibidoCtrl.text);
     final vuelto = recibido != null ? redondear(recibido - efectivo) : null;
     final valido = monto > 0 && monto <= widget.maximo + 0.005;
+    final fraccionEfectivo =
+        widget.montoInicial > 0 ? (efectivo / widget.montoInicial).clamp(0.0, 1.0) : 0.5;
 
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -565,52 +615,72 @@ class _FormularioParteState extends State<_FormularioParte> {
         Text(dinero(widget.montoInicial),
             style: estiloMono(tamano: 18, peso: FontWeight.w700)),
       ]),
-      const SizedBox(height: 12),
-
-      Row(children: [
-        GestureDetector(
-          onTap: () => _repartir(true),
-          child: const ChipEstado.ambar('Todo efectivo', icono: LucideIcons.banknote),
-        ),
-        const SizedBox(width: 8),
-        GestureDetector(
-          onTap: () => _repartir(false),
-          child: const ChipEstado.cian('Todo transferencia', icono: LucideIcons.landmark),
-        ),
-      ]),
       const SizedBox(height: 14),
 
-      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const EtiquetaCampo('Efectivo', color: C.ambar),
-          TextField(
-            controller: _efectivoCtrl,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            style: estiloMono(),
-            onTap: () => _efectivoCtrl.selection = TextSelection(
-                baseOffset: 0, extentOffset: _efectivoCtrl.text.length),
-            onChanged: (v) => setState(() {
-              final resto = redondear(widget.montoInicial - leerMonto(v));
-              _transferCtrl.text = '${resto > 0 ? resto : 0}';
-            }),
+      // Selector de método: segmentado, en vez de dos chips sueltos.
+      Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(color: C.base900, borderRadius: BorderRadius.circular(99)),
+        child: Row(children: [
+          for (final (valor, texto, color) in [
+            ('efectivo', 'Efectivo', C.ambar),
+            ('transferencia', 'Transferencia', C.cian),
+            ('mixto', 'Mixto', C.crema),
+          ])
+            Expanded(
+              child: GestureDetector(
+                onTap: () => _elegirMetodo(valor),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: _metodo == valor ? color.withValues(alpha: 0.16) : null,
+                    borderRadius: BorderRadius.circular(99),
+                    border: _metodo == valor ? Border.all(color: color) : null,
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(texto, style: TextStyle(
+                    fontWeight: FontWeight.w600, fontSize: 13.5,
+                    color: _metodo == valor ? color : C.crema60,
+                  )),
+                ),
+              ),
+            ),
+        ]),
+      ),
+      const SizedBox(height: 16),
+
+      if (_metodo == 'mixto') ...[
+        Row(children: [
+          Icon(LucideIcons.banknote, size: 16, color: C.ambar),
+          Expanded(
+            child: SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                activeTrackColor: C.ambar,
+                inactiveTrackColor: C.cian,
+                thumbColor: C.crema,
+                overlayColor: C.ambar.withValues(alpha: 0.2),
+              ),
+              child: Slider(value: fraccionEfectivo, onChanged: _repartirSlider),
+            ),
           ),
-        ])),
-        const SizedBox(width: 10),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const EtiquetaCampo('Transferencia', color: C.cian),
-          TextField(
-            controller: _transferCtrl,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            style: estiloMono(),
-            onTap: () => _transferCtrl.selection = TextSelection(
-                baseOffset: 0, extentOffset: _transferCtrl.text.length),
-            onChanged: (v) => setState(() {
-              final resto = redondear(widget.montoInicial - leerMonto(v));
-              _efectivoCtrl.text = '${resto > 0 ? resto : 0}';
-            }),
-          ),
-        ])),
-      ]),
+          Icon(LucideIcons.landmark, size: 16, color: C.cian),
+        ]),
+        Row(children: [
+          Expanded(child: CampoMonto(
+            controlador: _efectivoCtrl, color: C.ambar, alCambiar: _cambioEfectivo,
+          )),
+          const SizedBox(width: 10),
+          Expanded(child: CampoMonto(
+            controlador: _transferCtrl, color: C.cian, alCambiar: _cambioTransferencia,
+          )),
+        ]),
+      ] else
+        CampoMonto(
+          controlador: _metodo == 'efectivo' ? _efectivoCtrl : _transferCtrl,
+          color: _metodo == 'efectivo' ? C.ambar : C.cian,
+          alCambiar: _metodo == 'efectivo' ? _cambioEfectivo : _cambioTransferencia,
+        ),
       const SizedBox(height: 10),
 
       if (valido && (monto - redondear(widget.montoInicial)).abs() > 0.005)
@@ -625,16 +695,21 @@ class _FormularioParteState extends State<_FormularioParte> {
         Tarjeta(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const EtiquetaCampo('¿Con cuánto paga? (opcional, para el vuelto)'),
-            TextField(
-              controller: _recibidoCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              style: estiloMono(),
-              decoration: const InputDecoration(hintText: 'ej. 20'),
-              onChanged: (_) => setState(() {}),
-            ),
+            CampoMonto(controlador: _recibidoCtrl, color: C.crema,
+                alCambiar: () => setState(() {})),
+            const SizedBox(height: 10),
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              GestureDetector(onTap: () => _recibidoRapido(null),
+                  child: const ChipEstado.neutro('Exacto')),
+              for (final extra in [5.0, 10.0, 20.0, 50.0])
+                GestureDetector(
+                  onTap: () => _recibidoRapido(extra),
+                  child: ChipEstado.neutro('+${extra.toStringAsFixed(0)}', mono: true),
+                ),
+            ]),
             if (vuelto != null)
               Padding(
-                padding: const EdgeInsets.only(top: 10),
+                padding: const EdgeInsets.only(top: 12),
                 child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                   const Text('Vuelto', style: TextStyle(color: C.crema60)),
                   Text(

@@ -1,13 +1,13 @@
 // El elemento firma de AntiDescuadre: papel de comanda troquelado.
-// Borde dentado arriba y abajo, papel crema, tinta ciruela, tipografía mono.
+// Borde dentado arriba y abajo, papel crema, tinta añil, tipografía mono.
 
 import 'package:flutter/material.dart';
 
 import 'tema.dart';
 
 class _TroqueladoClipper extends CustomClipper<Path> {
-  final double diente;
-  const _TroqueladoClipper({this.diente = 11});
+  static const double diente = 11;
+  const _TroqueladoClipper();
 
   @override
   Path getClip(Size size) {
@@ -37,7 +37,7 @@ class _TroqueladoClipper extends CustomClipper<Path> {
   }
 
   @override
-  bool shouldReclip(covariant _TroqueladoClipper old) => old.diente != diente;
+  bool shouldReclip(covariant _TroqueladoClipper old) => false;
 }
 
 class Ticket extends StatelessWidget {

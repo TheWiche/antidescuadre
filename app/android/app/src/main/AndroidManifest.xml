@@ -3,8 +3,12 @@
     <!-- Cámara de comprobantes (sección 3.6) -->
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
-    <!-- Notificación persistente de comprobantes por legalizar (regla 9) -->
+    <!-- Notificación persistente de comprobantes por legalizar (regla 9):
+         solo un foreground service real garantiza que no se pueda deslizar
+         fuera de la bandeja mientras corre. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
     <!-- Guardar la foto en la galería en Android 9 o anterior -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="29"
@@ -14,6 +18,11 @@
         android:label="AntiDescuadre"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- Warning: no cambiar el nombre de este servicio (flutter_foreground_task) -->
+        <service
+            android:name="com.pravera.flutter_foreground_task.service.ForegroundService"
+            android:foregroundServiceType="dataSync"
+            android:exported="false"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"

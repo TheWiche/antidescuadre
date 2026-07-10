@@ -12,14 +12,31 @@ import '../logica/cuentas.dart';
 import '../logica/dinero.dart';
 import '../tema/tema.dart';
 import '../widgets/hoja.dart';
+import 'ajustes.dart';
 
-class PantallaResumen extends ConsumerWidget {
+class PantallaResumen extends ConsumerStatefulWidget {
   const PantallaResumen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PantallaResumen> createState() => _PantallaResumenState();
+}
+
+class _PantallaResumenState extends ConsumerState<PantallaResumen> {
+  bool _recordatorioOculto = false; // descartable solo por esta sesión
+
+  @override
+  Widget build(BuildContext context) {
     final turno = ref.watch(turnoActivoProv);
     final ajustes = ref.watch(ajustesProv).value;
+
+    // Recordatorio de respaldo: si está activado y ya pasó el plazo desde la
+    // última exportación (o nunca se ha exportado).
+    var recordarRespaldo = false;
+    if (!_recordatorioOculto && ajustes != null && ajustes.recordatorioBackupDias > 0) {
+      final ultima = ajustes.ultimaExportacion;
+      recordarRespaldo = ultima == null ||
+          DateTime.now().difference(ultima).inDays >= ajustes.recordatorioBackupDias;
+    }
 
     return SafeArea(
       child: ListView(
@@ -29,6 +46,37 @@ class PantallaResumen extends ConsumerWidget {
           const SizedBox(height: 2),
           Text('AntiDescuadre', style: Theme.of(context).textTheme.headlineLarge),
           const SizedBox(height: 18),
+          if (recordarRespaldo) ...[
+            Tarjeta(
+              fondo: C.ambarSuave,
+              borde: C.ambar,
+              relleno: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              alTocar: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const PantallaAjustes()),
+              ),
+              child: Row(children: [
+                const Icon(LucideIcons.hardDriveDownload, size: 19, color: C.ambar),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Text('Toca exportar un respaldo',
+                        style: TextStyle(fontWeight: FontWeight.w700, color: C.ambar)),
+                    Text(
+                      ajustes?.ultimaExportacion == null
+                          ? 'Nunca has exportado tu configuración.'
+                          : 'Tu último respaldo tiene más de ${ajustes!.recordatorioBackupDias} días.',
+                      style: const TextStyle(fontSize: 13, color: C.crema60),
+                    ),
+                  ]),
+                ),
+                IconButton(
+                  icon: const Icon(LucideIcons.x, size: 16, color: C.crema38),
+                  onPressed: () => setState(() => _recordatorioOculto = true),
+                ),
+              ]),
+            ),
+            const SizedBox(height: 12),
+          ],
           switch (turno) {
             AsyncData(value: final t?) => _TurnoActivo(turno: t),
             AsyncData() => const _InicioJornada(),

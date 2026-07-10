@@ -43,14 +43,13 @@ class LineaNueva {
   double get total => redondear(unitario * cantidad);
 }
 
-// Agrega una tanda de productos a una cuenta. Los ítems nacen "pendientes"
-// (regla 12); en venta directa nacen entregados porque se sirven en barra.
+// Agrega una tanda de productos a una cuenta. Los ítems siempre nacen
+// "pendientes" (regla 12).
 Future<void> agregarTanda(
   BaseDatos db,
   int cuentaId,
-  List<LineaNueva> lineas, {
-  bool entregadoInmediato = false,
-}) async {
+  List<LineaNueva> lineas,
+) async {
   final ahora = DateTime.now();
   await db.batch((b) {
     b.insertAll(db.items, [
@@ -62,9 +61,8 @@ Future<void> agregarTanda(
           variantesJson: Value(seleccionesAJson(l.variantes)),
           cantidad: l.cantidad,
           precioUnitario: l.unitario,
-          estado: Value(entregadoInmediato ? 'entregado' : 'pendiente'),
+          estado: const Value('pendiente'),
           agregadoEn: ahora,
-          entregadoEn: Value(entregadoInmediato ? ahora : null),
           tandaId: ahora.millisecondsSinceEpoch,
         ),
     ]);

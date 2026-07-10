@@ -5,7 +5,7 @@ import 'dart:async';
 
 import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import '../servicios/haptico.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -84,7 +84,7 @@ class _Lista extends ConsumerWidget {
     }
 
     Future<void> entregar(Item it) async {
-      HapticFeedback.lightImpact();
+      Haptico.ligero();
       await (db.update(db.items)..where((i) => i.id.equals(it.id)))
           .write(ItemsCompanion(
         estado: const Value('entregado'),
@@ -108,9 +108,8 @@ class _Lista extends ConsumerWidget {
             Builder(builder: (_) {
               final cuenta =
                   abiertas.where((c) => c.id == entrada.key).firstOrNull;
-              final alias = cuenta?.mesaId == null
-                  ? 'Venta directa'
-                  : mesas.where((m) => m.id == cuenta!.mesaId).firstOrNull?.alias ?? 'Mesa';
+              final alias =
+                  mesas.where((m) => m.id == cuenta?.mesaId).firstOrNull?.alias ?? 'Mesa';
               return Tarjeta(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -119,7 +118,7 @@ class _Lista extends ConsumerWidget {
                     )),
                     GestureDetector(
                       onTap: () async {
-                        HapticFeedback.mediumImpact();
+                        Haptico.medio();
                         final ahora = DateTime.now();
                         for (final it in entrada.value) {
                           await (db.update(db.items)..where((i) => i.id.equals(it.id)))

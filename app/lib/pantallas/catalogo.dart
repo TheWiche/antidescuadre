@@ -30,6 +30,7 @@ class PantallaCatalogo extends ConsumerStatefulWidget {
 
 class _PantallaCatalogoState extends ConsumerState<PantallaCatalogo> {
   int? _actual;
+  String _filtro = '';
 
   @override
   Widget build(BuildContext context) {
@@ -44,11 +45,17 @@ class _PantallaCatalogoState extends ConsumerState<PantallaCatalogo> {
       c = categorias.where((x) => x.id == padre).firstOrNull;
     }
     final subcategorias = categorias.where((x) => x.padreId == _actual).toList();
-    final productosAqui = productos.where((p) => p.categoriaId == _actual).toList();
+
+    // Búsqueda global (ignora la categoría actual) o contenido del nivel.
+    final texto = _filtro.trim().toLowerCase();
+    final buscando = texto.isNotEmpty;
+    final productosVisibles = buscando
+        ? productos.where((p) => p.nombre.toLowerCase().contains(texto)).toList()
+        : productos.where((p) => p.categoriaId == _actual).toList();
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: C.ciruela800,
+        backgroundColor: C.base800,
         centerTitle: true,
         title: const Text('Catálogo', style: TextStyle(
           fontFamily: F.display, fontSize: 20, fontWeight: FontWeight.w700,
@@ -68,98 +75,85 @@ class _PantallaCatalogoState extends ConsumerState<PantallaCatalogo> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
         children: [
-          // Migas
-          Row(children: [
-            Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: ChipEstado.ambar(
-                  rastro.isEmpty
-                      ? 'Todo el catálogo'
-                      : rastro.map((x) => x.nombre).join(' › '),
-                ),
-              ),
+          // Buscador (global, en cualquier nivel)
+          TextField(
+            onChanged: (v) => setState(() => _filtro = v),
+            decoration: const InputDecoration(
+              hintText: 'Buscar producto…',
+              prefixIcon: Icon(LucideIcons.search, size: 18, color: C.crema38),
             ),
-          ]),
-          const SizedBox(height: 14),
+          ),
+          const SizedBox(height: 12),
 
-          if (subcategorias.isEmpty && productosAqui.isEmpty)
+          // Migas tocables: cada nivel navega directo hasta ahí
+          if (!buscando) ...[
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(children: [
+                GestureDetector(
+                  onTap: () => setState(() => _actual = null),
+                  child: _actual == null
+                      ? const ChipEstado.ambar('Todo')
+                      : const ChipEstado.neutro('Todo'),
+                ),
+                for (final nivel in rastro) ...[
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 4),
+                    child: Icon(LucideIcons.chevronRight, size: 14, color: C.crema38),
+                  ),
+                  GestureDetector(
+                    onTap: () => setState(() => _actual = nivel.id),
+                    child: nivel.id == _actual
+                        ? ChipEstado.ambar(nivel.nombre)
+                        : ChipEstado.neutro(nivel.nombre),
+                  ),
+                ],
+              ]),
+            ),
+            const SizedBox(height: 14),
+          ],
+
+          if (buscando && productosVisibles.isEmpty)
+            const Vacio(icono: LucideIcons.search, titulo: 'Sin resultados')
+          else if (!buscando && subcategorias.isEmpty && productosVisibles.isEmpty)
             Vacio(
               icono: LucideIcons.package,
               titulo: _actual == null ? 'El catálogo está vacío' : 'Categoría vacía',
               detalle: 'Crea categorías y productos con los botones de abajo.',
             ),
 
-          for (final cat in subcategorias) ...[
-            Tarjeta(
-              relleno: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              child: Row(children: [
-                Expanded(
-                  child: InkWell(
-                    onTap: () => setState(() => _actual = cat.id),
-                    child: Row(children: [
-                      const Icon(LucideIcons.folderOpen, size: 19, color: C.ambar),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Builder(builder: (_) {
-                          final nHijas = ref.read(categoriasProv).value
-                                  ?.where((x) => x.padreId == cat.id).length ?? 0;
-                          final nProd = ref.read(productosProv).value
-                                  ?.where((p) => p.categoriaId == cat.id).length ?? 0;
-                          return Column(crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(cat.nombre, style: const TextStyle(
-                                    fontWeight: FontWeight.w700)),
-                                Text(
-                                  '${nHijas > 0 ? '$nHijas subcategoría${nHijas > 1 ? 's' : ''} · ' : ''}'
-                                  '$nProd producto${nProd != 1 ? 's' : ''}',
-                                  style: const TextStyle(fontSize: 12.5, color: C.crema38),
-                                ),
-                              ]);
-                        }),
-                      ),
-                      const Icon(LucideIcons.chevronRight, size: 17, color: C.crema38),
-                    ]),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(LucideIcons.pencil, size: 15, color: C.crema60),
-                  onPressed: () => _editarCategoria(cat),
-                ),
-              ]),
-            ),
-            const SizedBox(height: 10),
-          ],
-
-          for (final p in productosAqui) ...[
-            Opacity(
-              opacity: p.activo ? 1 : 0.5,
-              child: Tarjeta(
-                relleno: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                alTocar: () => _editarProducto(p, rastro),
-                child: Row(children: [
-                  Expanded(
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('${p.nombre}${p.activo ? '' : ' · inactivo'}',
-                          style: const TextStyle(fontWeight: FontWeight.w700)),
-                      if (gruposDeJson(p.gruposJson).isNotEmpty)
-                        Text(
-                          gruposDeJson(p.gruposJson).map((g) => g.nombre).join(' · '),
-                          style: const TextStyle(fontSize: 12.5, color: C.crema38),
-                        ),
-                    ]),
-                  ),
-                  Text(
-                    dinero(p.precio) + (gruposDeJson(p.gruposJson).isNotEmpty ? ' +' : ''),
-                    style: estiloMono(peso: FontWeight.w700),
-                  ),
-                ]),
+          if (!buscando)
+            for (final cat in subcategorias) ...[
+              _TarjetaCategoria(
+                categoria: cat,
+                alAbrir: () => setState(() => _actual = cat.id),
+                alEditar: () => _editarCategoria(cat),
               ),
+              const SizedBox(height: 10),
+            ],
+
+          // Productos: misma cuadrícula/tarjeta que el selector de venta
+          if (productosVisibles.isNotEmpty) ...[
+            if (!buscando && subcategorias.isNotEmpty) const SizedBox(height: 6),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 190, mainAxisExtent: 96,
+                crossAxisSpacing: 10, mainAxisSpacing: 10,
+              ),
+              itemCount: productosVisibles.length,
+              itemBuilder: (_, i) {
+                final p = productosVisibles[i];
+                return _TarjetaProductoCatalogo(
+                  producto: p,
+                  alTocar: () => _editarProducto(p, rastro),
+                );
+              },
             ),
-            const SizedBox(height: 10),
           ],
 
-          const SizedBox(height: 8),
+          const SizedBox(height: 18),
           Row(children: [
             Expanded(child: Boton('Categoría', icono: LucideIcons.plus,
                 tono: TonoBoton.fantasma, alTocar: () => _editarCategoria(null))),
@@ -241,6 +235,93 @@ class _PantallaCatalogoState extends ConsumerState<PantallaCatalogo> {
               ? 'Sin categoría'
               : rastro.map((c) => c.nombre).join(' › '),
         ));
+  }
+}
+
+class _TarjetaCategoria extends ConsumerWidget {
+  final Categoria categoria;
+  final VoidCallback alAbrir;
+  final VoidCallback alEditar;
+  const _TarjetaCategoria({
+    required this.categoria,
+    required this.alAbrir,
+    required this.alEditar,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final nHijas = ref.watch(categoriasProv).value
+            ?.where((x) => x.padreId == categoria.id).length ?? 0;
+    final nProd = ref.watch(productosProv).value
+            ?.where((p) => p.categoriaId == categoria.id).length ?? 0;
+    return Tarjeta(
+      relleno: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      alTocar: alAbrir,
+      child: Row(children: [
+        const Icon(LucideIcons.folderOpen, size: 19, color: C.ambar),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(categoria.nombre, style: const TextStyle(fontWeight: FontWeight.w700)),
+            Text(
+              '${nHijas > 0 ? '$nHijas subcategoría${nHijas > 1 ? 's' : ''} · ' : ''}'
+              '$nProd producto${nProd != 1 ? 's' : ''}',
+              style: const TextStyle(fontSize: 12.5, color: C.crema38),
+            ),
+          ]),
+        ),
+        IconButton(
+          icon: const Icon(LucideIcons.pencil, size: 15, color: C.crema60),
+          onPressed: alEditar,
+        ),
+        const Icon(LucideIcons.chevronRight, size: 17, color: C.crema38),
+      ]),
+    );
+  }
+}
+
+// Tarjeta de producto del catálogo: mismo lenguaje visual que la cuadrícula
+// del selector de venta, para que administrar se sienta igual que vender.
+class _TarjetaProductoCatalogo extends StatelessWidget {
+  final Producto producto;
+  final VoidCallback alTocar;
+  const _TarjetaProductoCatalogo({required this.producto, required this.alTocar});
+
+  @override
+  Widget build(BuildContext context) {
+    final grupos = gruposDeJson(producto.gruposJson);
+    return Opacity(
+      opacity: producto.activo ? 1 : 0.5,
+      child: Tarjeta(
+        alTocar: alTocar,
+        relleno: const EdgeInsets.all(13),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${producto.nombre}${producto.activo ? '' : ' · inactivo'}',
+              maxLines: 2, overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, height: 1.25),
+            ),
+            const Spacer(),
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              Text(
+                dinero(producto.precio) + (tieneRecargoReal(grupos) ? ' +' : ''),
+                style: estiloMono(tamano: 13, color: C.crema60),
+              ),
+              if (grupos.isNotEmpty)
+                Flexible(
+                  child: Text(
+                    grupos.map((g) => g.nombre).join(' · '),
+                    maxLines: 1, overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11.5, color: C.crema38),
+                  ),
+                ),
+            ]),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -359,7 +440,7 @@ class _EditorProductoState extends ConsumerState<_EditorProducto> {
           ),
           for (var gi = 0; gi < _grupos.length; gi++) ...[
             Tarjeta(
-              fondo: C.ciruela600,
+              fondo: C.base600,
               relleno: const EdgeInsets.all(12),
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 Row(children: [
@@ -508,13 +589,20 @@ class _EditorOpciones extends StatelessWidget {
               ]),
             ),
             if (opciones[i].hijas.isNotEmpty)
-              _EditorOpciones(
-                opciones: opciones[i].hijas,
-                nivel: nivel + 1,
-                alCambiar: (hijas) => alCambiar([
-                  for (var j = 0; j < opciones.length; j++)
-                    j == i ? opciones[j].copiarCon(hijas: hijas) : opciones[j],
-                ]),
+              Container(
+                margin: EdgeInsets.only(left: nivel * 18.0 + 8),
+                padding: const EdgeInsets.only(left: 6),
+                decoration: const BoxDecoration(
+                  border: Border(left: BorderSide(color: C.crema12, width: 2)),
+                ),
+                child: _EditorOpciones(
+                  opciones: opciones[i].hijas,
+                  nivel: 0, // la sangría ya la da esta guía visual
+                  alCambiar: (hijas) => alCambiar([
+                    for (var j = 0; j < opciones.length; j++)
+                      j == i ? opciones[j].copiarCon(hijas: hijas) : opciones[j],
+                  ]),
+                ),
               ),
           ],
         ],

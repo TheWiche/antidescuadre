@@ -167,10 +167,11 @@ void main() {
       expect(cerveza.total, 15);
     });
 
-    test('texto compartible incluye el total', () {
-      final texto = facturaComoTexto('Mi bar', 'VIP 2', lista, 'agrupada');
+    test('texto compartible incluye el total y no el alias de la mesa', () {
+      final texto = facturaComoTexto('Mi bar', lista, 'agrupada');
       expect(texto, contains('MI BAR'));
       expect(texto, contains('TOTAL'));
+      expect(texto, isNot(contains('VIP 2')));
     });
   });
 

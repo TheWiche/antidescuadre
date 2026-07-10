@@ -38,7 +38,7 @@ class PantallaMesaDetalle extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: C.ciruela800,
+        backgroundColor: C.base800,
         centerTitle: true,
         leading: IconButton(
           icon: const Icon(LucideIcons.arrowLeft),
@@ -105,37 +105,81 @@ class _MesaLibre extends ConsumerWidget {
   const _MesaLibre({required this.mesaId, required this.turnoId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-        children: [
-          Tarjeta(
-            relleno: const EdgeInsets.symmetric(vertical: 38, horizontal: 20),
-            child: Column(children: [
-              const ChipEstado.neutro('mesa libre'),
-              const SizedBox(height: 14),
-              const Text(
-                'Abre una cuenta y ve agregando lo que pidan; se cobra cuando ellos quieran.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: C.crema60),
-              ),
-              const SizedBox(height: 20),
-              Boton('Abrir cuenta', expandir: true, alto: 54, alTocar: () async {
-                final db = ref.read(baseDatos);
-                final cuentaId = await db.abrirCuentaEnMesa(mesaId, turnoId);
-                if (!context.mounted) return;
-                final lineas = await SelectorProductos.abrir(
-                  context,
-                  titulo: 'Agregar productos',
-                  textoConfirmar: 'Agregar a la cuenta',
-                );
-                if (lineas != null && lineas.isNotEmpty) {
-                  await agregarTanda(db, cuentaId, lineas);
-                }
-              }),
-            ]),
-          ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cerradas = ref
+            .watch(cuentasCerradasDeMesaProv((mesaId: mesaId, turnoId: turnoId)))
+            .value ??
+        [];
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      children: [
+        Tarjeta(
+          relleno: const EdgeInsets.symmetric(vertical: 38, horizontal: 20),
+          child: Column(children: [
+            const ChipEstado.neutro('mesa libre'),
+            const SizedBox(height: 14),
+            const Text(
+              'Abre una cuenta y ve agregando lo que pidan; se cobra cuando ellos quieran.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: C.crema60),
+            ),
+            const SizedBox(height: 20),
+            Boton('Abrir cuenta', expandir: true, alto: 54, alTocar: () async {
+              final db = ref.read(baseDatos);
+              final cuentaId = await db.abrirCuentaEnMesa(mesaId, turnoId);
+              if (!context.mounted) return;
+              final lineas = await SelectorProductos.abrir(
+                context,
+                titulo: 'Agregar productos',
+                textoConfirmar: 'Agregar a la cuenta',
+              );
+              if (lineas != null && lineas.isNotEmpty) {
+                await agregarTanda(db, cuentaId, lineas);
+              }
+            }),
+          ]),
+        ),
+        if (cerradas.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          const EtiquetaCampo('Cuentas recientes de esta mesa'),
+          for (final c in cerradas) ...[
+            _CuentaCerradaTarjeta(cuenta: c),
+            const SizedBox(height: 10),
+          ],
         ],
-      );
+      ],
+    );
+  }
+}
+
+// Cuenta ya saldada de esta mesa (dentro del turno activo): permite
+// "rescatarla" en vez de abrir una cuenta nueva desde cero — el caso de
+// "ya cerré la cuenta pero piden una ronda más" (regla 1: no se mezcla con
+// turnos ya cerrados).
+class _CuentaCerradaTarjeta extends ConsumerWidget {
+  final Cuenta cuenta;
+  const _CuentaCerradaTarjeta({required this.cuenta});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final items = ref.watch(itemsDeCuentaProv(cuenta.id)).value ?? [];
+    final total = totalItems(items);
+    return Tarjeta(
+      child: Row(children: [
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(dinero(total), style: estiloMono(tamano: 16, peso: FontWeight.w700)),
+            if (cuenta.cerradaEn != null)
+              Text('cerrada ${horaCorta(cuenta.cerradaEn!)}',
+                  style: const TextStyle(fontSize: 13, color: C.crema60)),
+          ]),
+        ),
+        Boton('Reabrir', icono: LucideIcons.rotateCcw, tono: TonoBoton.fantasma,
+            alTocar: () => ref.read(baseDatos).reabrirCuenta(cuenta.id)),
+      ]),
+    );
+  }
 }
 
 class _CuentaAbierta extends ConsumerWidget {
@@ -262,7 +306,6 @@ class _CuentaAbierta extends ConsumerWidget {
               alTocar: items.isEmpty ? null : () => mostrarHoja(context,
                   constructor: (_) => FacturaVista(
                         nombreNegocio: nombreNegocio,
-                        alias: mesa.alias,
                         fecha: cuenta.abiertaEn,
                         items: items,
                       )))),
